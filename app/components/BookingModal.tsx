@@ -14,6 +14,8 @@ type Props = {
   text?: string;
   contactPhone?: string;
   initialService?: string;
+  // true כשבעל העסק בודק מתוך העורך: מוסיף הסברים שרלוונטיים רק לו
+  preview?: boolean;
   onClose: () => void;
 };
 
@@ -37,6 +39,7 @@ export default function BookingModal({
   text,
   contactPhone,
   initialService = '',
+  preview = false,
   onClose,
 }: Props) {
   const [service, setService] = useState(initialService);
@@ -132,7 +135,7 @@ export default function BookingModal({
             {waNumber ? (
               <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-5 space-y-3">
                 <p className="font-extrabold text-green-900 text-lg">שלב אחרון: שלחו הודעה לעסק</p>
-                <p className="text-sm text-green-800">כדי שהעסק יידע שהגעתם, לחצו על הכפתור ושלחו את ההודעה המוכנה בוואטסאפ.</p>
+                <p className="text-sm text-green-800">כדי שהעסק יידע שהגעתם, לחצו על אחד הכפתורים ושלחו את ההודעה המוכנה.</p>
                 <a
                   href={`https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`}
                   target="_blank"
@@ -141,9 +144,22 @@ export default function BookingModal({
                 >
                   💬 שלח הודעה בוואטסאפ
                 </a>
+                <a
+                  href={`sms:+${waNumber}?&body=${encodeURIComponent(waText)}`}
+                  className="block bg-white hover:bg-gray-50 text-gray-800 border-2 border-gray-300 font-bold py-3 rounded-xl transition-all"
+                >
+                  ✉️ או שלח SMS
+                </a>
               </div>
+            ) : preview ? (
+              <p className="text-sm font-bold text-orange-700 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                לא הגדרתם מספר טלפון לעסק, ולכן הלקוחות לא יראו כאן שלב של שליחת הודעה. הגדירו אותו בתחתית העורך, בשדה &quot;הגדרת וואטסאפ לעסק&quot;.
+              </p>
             ) : (
               <p className="text-sm text-gray-600">העסק יראה את התור שלכם ביומן שלו.</p>
+            )}
+            {preview && (
+              <p className="text-xs text-gray-500">זה תור אמיתי לבדיקה: הוא נשמר ויופיע ביומן בדשבורד. אפשר לבטל אותו בקישור שלמטה.</p>
             )}
 
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600 space-y-2 text-right">

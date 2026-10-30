@@ -6,6 +6,7 @@ import { uploadSiteAsset } from '@/app/utils/upload';
 import { supabase } from '@/app/utils/supabase';
 import ScheduleEditor from '@/app/components/ScheduleEditor';
 import CatalogEditor from '@/app/components/CatalogEditor';
+import BookingModal from '@/app/components/BookingModal';
 import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule } from '@/app/utils/schedule';
 
 export default function CreatePage() {
@@ -333,6 +334,7 @@ export default function CreatePage() {
 
   // שומר את האתר בשרת (חובה להתחבר), ורק אז ממשיך לתשלום או לדשבורד.
   const handlePublish = async () => {
+    if (!siteData.contactPhone && !confirm('לא הגדרתם מספר טלפון לעסק (בתחתית העורך, "הגדרת וואטסאפ לעסק").\nבלי מספר, לקוחות שקובעים תור או מתעניינים במוצר לא יוכלו לשלוח לכם הודעה.\n\nלשמור בכל זאת?')) return;
     setIsSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -569,61 +571,32 @@ export default function CreatePage() {
           </div>
         )}
 
-        {/* === מודל קביעת תור === */}
-        {isBookingModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer" onClick={() => setIsBookingModalOpen(false)}></div>
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto relative z-10 flex flex-col animate-in fade-in zoom-in-95 duration-300 border border-gray-100">
-              <button onClick={() => setIsBookingModalOpen(false)} className="absolute top-6 right-6 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900 w-12 h-12 rounded-full flex items-center justify-center text-2xl z-20 transition-colors">✖</button>
-              <div className="text-center pt-14 pb-8 px-8 border-b border-gray-50">
-                <input className="text-3xl md:text-5xl font-extrabold text-gray-900 bg-transparent text-center outline-none w-full md:w-3/4 mx-auto hover:bg-gray-50 focus:bg-gray-50 rounded-2xl p-3 transition-colors tracking-tight" value={siteData.bookingTitle || 'קביעת תור אונליין 📅'} onChange={(e) => updateField('bookingTitle', e.target.value)} />
-                <textarea className="text-lg md:text-xl text-gray-500 mt-4 bg-transparent text-center outline-none w-full max-w-2xl mx-auto resize-none hover:bg-gray-50 focus:bg-gray-50 rounded-2xl p-3 transition-colors leading-relaxed" value={siteData.bookingText || 'בחרו את השירות, התאריך והשעה הנוחים לכם, ונשריין לכם מקום ביומן באופן אוטומטי.'} onChange={(e) => updateField('bookingText', e.target.value)} rows={2} />
-              </div>
-              <div className="flex flex-col md:flex-row bg-white">
-                <div className="w-full md:w-3/5 p-8 md:p-12 border-b md:border-b-0 md:border-l border-gray-50">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3"><span className="bg-blue-50 text-blue-600 w-10 h-10 rounded-full flex items-center justify-center text-base">1</span>פרטי התור</h3>
-                  <div className="mb-8">
-                    <label className="block text-sm font-bold text-gray-700 mb-3">איזה שירות תרצו להזמין?</label>
-                    <select className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer" value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
-                      <option value="" disabled>בחרו שירות מתוך הרשימה...</option>
-                      {siteData.services?.map((s: any, i: number) => (
-                        <option key={i} value={s.name}>{s.name} ({s.duration || '60 דקות'})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-3">בחרו תאריך</label>
-                      <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-gray-700 mb-3">בחרו שעה מועדפת</label>
-                      <select className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer appearance-none">
-                        <option>09:00 - 10:00</option>
-                        <option>10:00 - 11:00</option>
-                        <option>12:00 - 13:00</option>
-                        <option>15:00 - 16:00</option>
-                        <option>17:00 - 18:00</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full md:w-2/5 p-8 md:p-12 bg-gray-50/50 flex flex-col justify-center">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3"><span className="bg-gray-200 text-gray-600 w-10 h-10 rounded-full flex items-center justify-center text-base">2</span>פרטים לאישור</h3>
-                  <div className="flex flex-col gap-5">
-                    <input type="text" placeholder="שם מלא" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white transition-all" required />
-                    <input type="tel" placeholder="מספר נייד" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white text-right transition-all" dir="rtl" required />
-                    <button className="w-full py-5 mt-2 rounded-2xl font-bold text-white shadow-xl text-lg hover:-translate-y-1 hover:shadow-2xl transition-all" style={{ backgroundColor: siteData.themeColor }} onClick={() => { if (!selectedService) { alert('אנא בחרו שירות.'); return; } alert('זו תצוגה מקדימה בלבד, ותור לא נשמר כאן. תורים אמיתיים נקבעים באתר המפורסם שלך (הכפתור "צפה באתר" בדשבורד).'); setIsBookingModalOpen(false); }}>
-                      שריין לי את התור
-                    </button>
-                  </div>
-                </div>
-              </div>
+        {isBookingModalOpen && siteData.id && (
+          <BookingModal
+            preview
+            siteId={siteData.id}
+            businessName={siteData.businessName}
+            services={siteData.services || []}
+            themeColor={siteData.themeColor}
+            title={siteData.bookingTitle}
+            text={siteData.bookingText}
+            contactPhone={siteData.contactPhone}
+            initialService={selectedService}
+            onClose={() => setIsBookingModalOpen(false)}
+          />
+        )}
+        {isBookingModalOpen && !siteData.id && (
+          <div className="fixed inset-0 z-[500] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" dir="rtl">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center space-y-4">
+              <div className="text-5xl">📅</div>
+              <h3 className="text-2xl font-extrabold text-gray-900">קודם צריך לשמור את האתר</h3>
+              <p className="text-gray-600">קביעת תור אמיתית עובדת רק באתר שנשמר. לחצו על הכפתור הכהה בתחתית הדף ("שמור" או "פרסם"), ואז חזרו לכאן כדי לבדוק אותה.</p>
+              <button onClick={() => setIsBookingModalOpen(false)} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-black">הבנתי</button>
             </div>
           </div>
         )}
 
-        {/* === הדר עליון === */}
+{/* === הדר עליון === */}
         <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-[100] transition-all">
           <input
             className="text-2xl font-extrabold text-gray-900 bg-transparent outline-none w-auto max-w-[200px] md:max-w-md transition-colors hover:bg-gray-100/50 focus:bg-gray-100 cursor-text rounded-lg px-2 py-1 tracking-tight"
