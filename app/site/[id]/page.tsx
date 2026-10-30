@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/app/utils/supabase';
 import ReviewsSection from '../../components/ReviewsSection';
+import BookingModal from '../../components/BookingModal';
+import CatalogSection from '../../components/CatalogSection';
 
 export default function PublicSitePage() {
   const params = useParams(); 
@@ -18,14 +20,8 @@ export default function PublicSitePage() {
   // חלונית קביעת תור
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [appointmentDate, setAppointmentDate] = useState('');
-  const [appointmentTime, setAppointmentTime] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // שומר את פרטי התור שנקבע בהצלחה עבור הודעת האישור והדירוג
-  const [bookedAppointment, setBookedAppointment] = useState<any>(null);
 
   // חלונית ביטול תור
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -33,8 +29,6 @@ export default function PublicSitePage() {
   const [cancelData, setCancelData] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState('');
-
-  const todayString = new Date().toLocaleDateString('en-CA'); 
 
   // טעינת האתר ובדיקה אם הלקוח הגיע מלינק ביטול
   useEffect(() => {
@@ -125,57 +119,7 @@ export default function PublicSitePage() {
 
   const openBookingModal = (serviceName = '') => {
     setSelectedService(serviceName);
-    setBookedAppointment(null);
     setIsBookingModalOpen(true);
-  };
-
-  const handleBookAppointment = async () => {
-    if (!selectedService || !customerName || !customerPhone || !appointmentDate || !appointmentTime) {
-      alert('אנא מלאו את כל השדות כדי שנוכל לשריין את התור.');
-      return;
-    }
-
-    const selectedDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
-    const now = new Date();
-    if (selectedDateTime < now) {
-      alert('המועד שבחרת כבר עבר! אנא בחר תאריך עתידי.');
-      return; 
-    }
-
-    setIsSubmitting(true);
-    try {
-      // הבדיקה שהשעה פנויה והשריון נעשים בשרת, בפעולה אחת
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          siteId: params?.id,
-          service: selectedService,
-          date: appointmentDate,
-          time: appointmentTime,
-          customerName,
-          customerPhone,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        alert(data.error || 'שגיאה בקביעת התור. נסו שוב.');
-        return;
-      }
-
-      setBookedAppointment({ id: data.id, token: data.token });
-
-      // ניקוי הטופס
-      setCustomerName('');
-      setCustomerPhone('');
-      setAppointmentDate('');
-      setAppointmentTime('');
-    } catch {
-      alert('שגיאה בקביעת התור. בדקו את החיבור לאינטרנט ונסו שוב.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   if (loading) {
@@ -242,122 +186,35 @@ export default function PublicSitePage() {
         </div>
       )}
 
-      {/* -------------------- מודל קביעת תור -------------------- */}
-      {isBookingModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" onClick={() => setIsBookingModalOpen(false)}></div>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto relative z-10 flex flex-col p-6">
-            <button onClick={() => setIsBookingModalOpen(false)} className="absolute top-4 right-4 bg-gray-100 text-gray-600 hover:bg-gray-200 w-10 h-10 rounded-full text-xl z-20">✖</button>
-            
-            {/* אם התור נקבע בהצלחה - מציגים הודעת אישור מיוחדת עם כפתור דירוג */}
-            {bookedAppointment ? (
-              <div className="py-12 px-6 text-center space-y-6 max-w-lg mx-auto">
-                <div className="text-5xl animate-bounce">🎉</div>
-                <h2 className="text-3xl font-black text-emerald-900">התור נקבע בהצלחה!</h2>
-                <p className="text-gray-600">
-                  תודה שקבעת תור! התור שלך נשמר במערכת.
-                </p>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600 space-y-2">
-                  <p className="font-bold text-gray-800">צריכים לבטל את התור?</p>
-                  <p>שמרו את הקישור האישי הזה. רק מי שמחזיק בו יכול לבטל את התור:</p>
-                  <a
-                    href={`/site/${params?.id}?cancel=${bookedAppointment.token}`}
-                    className="block break-all text-blue-600 underline"
-                    dir="ltr"
-                  >
-                    {typeof window !== 'undefined' ? `${window.location.origin}/site/${params?.id}?cancel=${bookedAppointment.token}` : ''}
-                  </a>
-                </div>
-
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-4">
-                  <p className="text-sm font-bold text-emerald-800">
-                    נשמח לשמוע איך היתה החוויה שלך! תוכל לדרג ולהעלות תמונה:
-                  </p>
-                  <a
-                    href={`/review/${bookedAppointment.token}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
-                  >
-                    ⭐ לחץ כאן לדירוג והשארת חוות דעת
-                  </a>
-                </div>
-
-                <button
-                  onClick={() => setIsBookingModalOpen(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-6 py-2.5 rounded-full text-sm transition-colors"
-                >
-                  סגור חלונית
-                </button>
-              </div>
-            ) : (
-              /* טופס קביעת התור הרגיל */
-              <>
-                <div className="text-center pt-8 pb-6 border-b border-gray-100">
-                  <h2 className="text-3xl font-bold text-gray-800">{siteData.bookingTitle || 'קביעת תור אונליין 📅'}</h2>
-                </div>
-
-                <div className="flex flex-col md:flex-row bg-white pt-6">
-                  <div className="w-full md:w-3/5 p-6 border-b md:border-b-0 md:border-l border-gray-100">
-                    <div className="mb-6">
-                      <label className="block text-sm font-bold text-gray-700 mb-3">בחרו שירות...</label>
-                      <select className="w-full p-4 rounded-xl border-2 bg-gray-50" value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
-                        <option value="" disabled>בחרו שירות...</option>
-                        {siteData.services?.map((s: any, i: number) => (
-                          <option key={i} value={s.name}>{s.name} ({s.duration || '60 דקות'})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">תאריך</label>
-                        <input type="date" min={todayString} value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)} className="w-full p-4 rounded-xl border-2 bg-gray-50" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-3">שעה</label>
-                        <select value={appointmentTime} onChange={(e) => setAppointmentTime(e.target.value)} className="w-full p-4 rounded-xl border-2 bg-gray-50">
-                          <option value="" disabled>בחרו...</option>
-                          {Array.from(
-                            { length: (siteData.closeHour || 19) - (siteData.openHour || 9) }, 
-                            (_, i) => {
-                              const hour = (siteData.openHour || 9) + i;
-                              const formattedHour = `${hour.toString().padStart(2, '0')}:00`;
-                              return <option key={hour} value={formattedHour}>{formattedHour}</option>;
-                            }
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full md:w-2/5 p-6 bg-gray-50/50 rounded-2xl">
-                    <div className="flex flex-col gap-4">
-                      <input type="text" placeholder="שם מלא" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="w-full p-4 rounded-xl border bg-white" />
-                      <input type="tel" placeholder="מספר נייד" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} className="w-full p-4 rounded-xl border bg-white text-right" dir="rtl" />
-                      <button disabled={isSubmitting} onClick={handleBookAppointment} className="w-full py-4 rounded-xl font-bold text-white mt-4" style={{backgroundColor: siteData.themeColor || '#2563eb'}}>
-                        {isSubmitting ? 'שומר תור...' : 'שריין לי את התור'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {isBookingModalOpen && siteData.bookingEnabled !== false && (
+        <BookingModal
+          siteId={params?.id as string}
+          businessName={siteData.businessName}
+          services={siteData.services || []}
+          themeColor={siteData.themeColor}
+          title={siteData.bookingTitle}
+          text={siteData.bookingText}
+          contactPhone={siteData.contactPhone}
+          initialService={selectedService}
+          onClose={() => setIsBookingModalOpen(false)}
+        />
       )}
 
-      {/* -------------------- תפריט ניווט -------------------- */}
+{/* -------------------- תפריט ניווט -------------------- */}
       <header className="bg-white shadow-md py-4 px-6 flex justify-between items-center sticky top-0 z-[100]">
         <h1 className="text-2xl font-black text-gray-800">{siteData.businessName || 'שם העסק'}</h1>
         
         <div className="flex items-center gap-2 md:gap-4">
-          <button onClick={() => setIsCancelModalOpen(true)} className="hidden md:block text-sm text-gray-500 hover:text-red-500 font-medium ml-4 transition-colors">
-            ביטול תור
-          </button>
-          <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full font-bold shadow-sm">
-            קביעת תור
-          </button>
+          {siteData.bookingEnabled !== false && (
+            <>
+              <button onClick={() => setIsCancelModalOpen(true)} className="hidden md:block text-sm text-gray-500 hover:text-red-500 font-medium ml-4 transition-colors">
+                ביטול תור
+              </button>
+              <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full font-bold shadow-sm">
+                קביעת תור
+              </button>
+            </>
+          )}
           <button onClick={scrollToContact} className="text-white px-6 py-2.5 rounded-full font-bold shadow-md" style={{ backgroundColor: siteData.themeColor || '#2563eb' }}>
             צור קשר
           </button>
@@ -379,6 +236,9 @@ export default function PublicSitePage() {
       <div className="py-20 px-4 max-w-4xl mx-auto text-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-8">על העסק</h2>
         <p className="text-lg text-gray-600 whitespace-pre-wrap">{siteData.aboutText}</p>
+        {siteData.workingHours && (
+          <p className="mt-6 text-gray-700 font-bold">⏰ שעות פעילות: <span className="font-normal">{siteData.workingHours}</span></p>
+        )}
       </div>
 
       <div className="py-20 px-4 bg-gray-50 border-t">
@@ -390,16 +250,31 @@ export default function PublicSitePage() {
                 <h3 className="text-xl font-bold text-gray-800 text-center md:text-right mb-3">{service.name}</h3>
                 <p className="text-gray-600 text-center md:text-right flex-grow mb-6 whitespace-pre-wrap">{service.description}</p>
                 <div className="mt-auto text-center border-t pt-4">
-                  <div className="text-sm text-gray-500 mb-3 font-medium">⏱️ זמן משוער: {service.duration || '60 דקות'}</div>
-                  <button onClick={() => openBookingModal(service.name)} className="inline-block px-6 py-3 rounded-full font-bold text-white w-full max-w-[250px] shadow-sm" style={{ backgroundColor: siteData.themeColor || '#2563eb' }}>
-                    {service.price}
-                  </button>
+                  {siteData.bookingEnabled !== false ? (
+                    <>
+                      <div className="text-sm text-gray-500 mb-3 font-medium">⏱️ זמן משוער: {service.duration || '60 דקות'}</div>
+                      <button onClick={() => openBookingModal(service.name)} className="inline-block px-6 py-3 rounded-full font-bold text-white w-full max-w-[250px] shadow-sm" style={{ backgroundColor: siteData.themeColor || '#2563eb' }}>
+                        {service.price}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="inline-block px-6 py-3 rounded-full font-bold text-white w-full max-w-[250px] shadow-sm" style={{ backgroundColor: siteData.themeColor || '#2563eb' }}>
+                      {service.price}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      <CatalogSection
+        catalog={siteData.catalog}
+        themeColor={siteData.themeColor}
+        phone={siteData.contactPhone}
+        businessName={siteData.businessName}
+      />
 
       {/* -------------------- אזור הצגת ביקורות -------------------- */}
       {params?.id && <ReviewsSection siteId={params.id as string} />}

@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadSiteAsset } from '@/app/utils/upload';
 import { supabase } from '@/app/utils/supabase';
+import ScheduleEditor from '@/app/components/ScheduleEditor';
+import CatalogEditor from '@/app/components/CatalogEditor';
+import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule } from '@/app/utils/schedule';
 
 export default function CreatePage() {
   const [formData, setFormData] = useState({
@@ -35,10 +38,6 @@ export default function CreatePage() {
 
   // === ניהול שעות פעילות ===
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
-  const [newPermanentHours, setNewPermanentHours] = useState('');
-  const [tempClosedDate, setTempClosedDate] = useState('');
-  const [tempClosedStartHour, setTempClosedStartHour] = useState('');
-  const [tempClosedEndHour, setTempClosedEndHour] = useState('');
 
   // === מודל הגדרת מבצע ===
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
@@ -128,7 +127,11 @@ export default function CreatePage() {
         aboutText: data.site.aboutText || 'אנחנו כאן כדי לתת לכם את השירות הטוב ביותר.',
         location: data.site.location || formData.location,
         businessType: formData.businessType,
-        workingHours: formData.workingHours,
+        workingHours: formatSchedule(DEFAULT_SCHEDULE),
+        schedule: DEFAULT_SCHEDULE,
+        closures: [],
+        bookingEnabled: data.site.needsBooking !== false,
+        catalog: [],
         services: (data.site.services && data.site.services.length > 0) ? data.site.services : [
           { name: 'שירות ראשון', description: 'תיאור השירות שלך', price: '100 ₪', duration: '60 דקות' }
         ],
@@ -157,6 +160,12 @@ export default function CreatePage() {
     localStorage.setItem('generatedSite', JSON.stringify(newData));
   };
 
+  const updateFields = (fields: Record<string, any>) => {
+    if (!isEditing) return;
+    const newData = { ...siteData, ...fields };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
   const calculateDiscount = (originalPriceStr: string, percentage: number) => {
     if (!originalPriceStr) return '0 ₪';
     const numMatch = originalPriceStr.match(/\d+/);
@@ -478,58 +487,19 @@ export default function CreatePage() {
           </div>
         )}
 
-        {/* === מודל ניהול שעות פעילות === */}
         {isHoursModalOpen && (
-          <div className="fixed inset-0 z-[500] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-              <div className="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="text-xl font-extrabold text-gray-800">ניהול שעות פעילות ⏰</h3>
-                <button onClick={() => setIsHoursModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-3xl transition-colors">&times;</button>
-              </div>
-              <div className="p-8 flex flex-col gap-6">
-                <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
-                  <label className="block text-sm font-bold text-blue-900 mb-2">שינוי שעות פעילות תמידי:</label>
-                  <input className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" placeholder="לדוגמה: א'-ה': 08:00 - 18:00" value={newPermanentHours} onChange={(e) => setNewPermanentHours(e.target.value)} />
-                  <button onClick={() => { if (!newPermanentHours) return; updateField('workingHours', newPermanentHours); setIsHoursModalOpen(false); }} className="mt-3 w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-sm">עדכן שעות תמידיות</button>
-                </div>
-                <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
-                  <label className="block text-sm font-bold text-orange-900 mb-4">שינוי חד-פעמי (סגירה/חופש):</label>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">באיזה תאריך?</label>
-                      <input type="date" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedDate} onChange={(e) => setTempClosedDate(e.target.value)} />
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">משעה (אופציונלי):</label>
-                        <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedStartHour} onChange={(e) => setTempClosedStartHour(e.target.value)} />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-600 mb-1">עד שעה:</label>
-                        <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedEndHour} onChange={(e) => setTempClosedEndHour(e.target.value)} />
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (!tempClosedDate) { alert('נא לבחור תאריך'); return; }
-                        let message = `סגור ביום ${tempClosedDate} (שינוי חד פעמי)`;
-                        if (tempClosedStartHour && tempClosedEndHour) {
-                          message = `בתאריך ${tempClosedDate} לא נקבל קהל בין השעות ${tempClosedStartHour} עד ${tempClosedEndHour} (שינוי חד פעמי)`;
-                        }
-                        updateField('workingHours', message);
-                        alert('החריגה עודכנה בהצלחה! 🛑');
-                        setIsHoursModalOpen(false);
-                      }}
-                      className="w-full bg-orange-600 text-white font-bold py-2.5 rounded-xl hover:bg-orange-700 transition-all shadow-sm mt-2"
-                    >שמור שינוי חד-פעמי</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ScheduleEditor
+            schedule={getSchedule(siteData)}
+            closures={getClosures(siteData)}
+            onClose={() => setIsHoursModalOpen(false)}
+            onSave={(schedule, closures) => {
+              updateFields({ schedule, closures, workingHours: formatSchedule(schedule) });
+              setIsHoursModalOpen(false);
+            }}
+          />
         )}
 
-        {/* === מודל הוספת סטורי === */}
+{/* === מודל הוספת סטורי === */}
         {isStoryEditorOpen && (
           <div className="fixed inset-0 z-[500] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
@@ -670,6 +640,9 @@ export default function CreatePage() {
                     <span>הפעל סייל/מבצע</span><span>📣</span>
                   </button>
                 )}
+                <button className="px-5 py-4 text-right hover:bg-blue-50 border-b border-gray-50 text-blue-700 font-bold flex justify-between items-center transition-colors" onClick={() => { updateField('bookingEnabled', siteData.bookingEnabled === false); setShowSettings(false); }}>
+                  <span>{siteData.bookingEnabled === false ? 'הפעל קביעת תורים' : 'כבה קביעת תורים'}</span><span>📅</span>
+                </button>
                 <button className="px-5 py-4 text-right hover:bg-gray-50 border-b border-gray-50 text-gray-700 font-medium flex justify-between items-center transition-colors" onClick={() => setShowSettings(false)}><span>המשך עריכה</span><span>✏️</span></button>
                 <button className="px-5 py-4 text-right hover:bg-red-50 text-red-600 font-medium flex justify-between items-center transition-colors border-b border-gray-50" onClick={resetAndGoHome}><span>יצירת אתר חדש</span><span>🔄</span></button>
                 
@@ -678,7 +651,9 @@ export default function CreatePage() {
                 </button>
               </div>
             )}
-            <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-50 text-gray-800 border border-gray-200 px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-gray-100 hover:shadow transition-all">קביעת תור</button>
+            {siteData.bookingEnabled !== false && (
+              <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-50 text-gray-800 border border-gray-200 px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-gray-100 hover:shadow transition-all">קביעת תור</button>
+            )}
             <button onClick={scrollToContact} className="text-white px-7 py-2.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={{ backgroundColor: siteData.themeColor }}>צור קשר</button>
           </div>
         </header>
@@ -803,7 +778,7 @@ export default function CreatePage() {
                     <textarea className="text-gray-500 w-full bg-transparent outline-none rounded-xl p-2 text-base resize-none text-center md:text-right flex-grow hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors leading-relaxed" value={service.description} onChange={(e) => updateService(index, 'description', e.target.value)} rows={4} />
 
                     <div className="mt-8 text-center pt-6 border-t border-gray-50">
-                      <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-4 font-medium">
+                      <div className={`${siteData.bookingEnabled === false ? 'hidden' : 'flex'} items-center justify-center gap-2 text-sm text-gray-400 mb-4 font-medium`}>
                         <span>⏱️ זמן משוער:</span>
                         <input className="bg-transparent outline-none w-24 text-right text-gray-700 font-bold hover:bg-gray-50 focus:bg-gray-50 cursor-text rounded px-2 py-1 transition-colors" value={service.duration || '60 דקות'} onChange={(e) => updateService(index, 'duration', e.target.value)} />
                       </div>
@@ -841,6 +816,15 @@ export default function CreatePage() {
             </div>
           </div>
         </div>
+
+        {/* === קטגוריות מוצרים === */}
+        <CatalogEditor
+          catalog={siteData.catalog || []}
+          onChange={(catalog) => updateField('catalog', catalog)}
+          themeColor={siteData.themeColor}
+          businessName={siteData.businessName}
+          industry={formData.industry}
+        />
 
         {/* === צור קשר === */}
         <div id="contact-section" className="py-24 px-4 bg-gray-900 border-t border-gray-800">
