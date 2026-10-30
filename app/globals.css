@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+@layer base {
+  /* שיפור הקריאות של טקסט רץ */
+  body {
+    @apply text-gray-800 leading-relaxed antialiased;
+  }
+
+  /* כותרות בסגנון מודרני - בולטות אך קריאות */
+  h1, h2, h3 {
+    @apply font-extrabold tracking-tight text-gray-900;
+  }
+
+  h1 {
+    @apply text-4xl md:text-6xl; /* כותרת ראשית גדולה ומרשימה */
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl mt-12 mb-6; /* כותרות משנה עם רווחים ברורים */
+  }
+
+  /* שיפור לממשק המשתמש - ריווח בין פסקאות */
+  p {
+    @apply mb-4;
+  }
+
+  /* הפרדה ברורה בין חלקים */
+  section {
+    @apply py-16 md:py-24;
+  }
+}

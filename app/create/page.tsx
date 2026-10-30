@@ -1,0 +1,941 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { uploadSiteAsset } from '@/app/utils/upload';
+
+export default function CreatePage() {
+  const [formData, setFormData] = useState({
+    businessName: '',
+    industry: '',
+    superpower: '',
+    services: '',
+    location: '',
+    businessType: 'physical',
+    workingHours: 'ימים א\'-ה\': 09:00 - 19:00'
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [siteData, setSiteData] = useState<any>(null);
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [isEditing, setIsEditing] = useState(true);
+
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState('');
+
+  // === אזור הסטוריז ===
+  const [activeStoryGroupIndex, setActiveStoryGroupIndex] = useState<number | null>(null);
+  const [activeStoryImageIndex, setActiveStoryImageIndex] = useState<number>(0);
+  const [isStoryEditorOpen, setIsStoryEditorOpen] = useState(false);
+  const [newStoryTitle, setNewStoryTitle] = useState('');
+  const [newStoryImages, setNewStoryImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // === ניהול שעות פעילות ===
+  const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
+  const [newPermanentHours, setNewPermanentHours] = useState('');
+  const [tempClosedDate, setTempClosedDate] = useState('');
+  const [tempClosedStartHour, setTempClosedStartHour] = useState('');
+  const [tempClosedEndHour, setTempClosedEndHour] = useState('');
+
+  // === מודל הגדרת מבצע ===
+  const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+  const [saleConfigForm, setSaleConfigForm] = useState({
+    serviceIndex: 0,
+    discountPercentage: 20,
+    urgencyType: 'people',
+    peopleLeft: 15,
+    endDate: '',
+    endTime: '23:59'
+  });
+
+  const router = useRouter();
+
+  const themeColors = [
+    '#2563eb', '#16a34a', '#dc2626', '#ca8a04',
+    '#9333ea', '#0f766e', '#ea580c', '#111827'
+  ];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const nameFromUrl = searchParams.get('name');
+      if (nameFromUrl) {
+        setFormData((prev) => ({ ...prev, businessName: nameFromUrl }));
+      }
+    }
+
+    const saved = localStorage.getItem('generatedSite');
+    if (saved) {
+      setSiteData(JSON.parse(saved));
+    }
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleGenerate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!formData.businessName || !formData.industry) {
+      alert('אנא מלאו את שם העסק ותחום הפעילות');
+      return;
+    }
+
+    setIsLoading(true);
+
+    const combinedDescription = `
+      שם העסק: ${formData.businessName}.
+      תחום הפעילות: ${formData.industry}.
+      סוג שירות: ${formData.businessType === 'physical' ? 'מקום פיזי (הלקוח מגיע לעסק)' : 'עד בית הלקוח'}.
+      שעות פעילות: ${formData.workingHours}.
+      היתרון המרכזי / למה לבחור בנו: ${formData.superpower}.
+      שירותים עיקריים: ${formData.services}.
+      אזור/כתובת מתן שירות: ${formData.location}.
+    `;
+
+    try {
+      const res = await fetch('/api/generate-site', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessDescription: combinedDescription })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'שגיאה ביצירה');
+
+      const newSiteData = {
+        ...data.site,
+        heroTitle: data.site.title,
+        heroSubtitle: data.site.subtitle,
+        generatedImageUrl: data.site.hero_image,
+        aboutText: data.site.aboutText || 'אנחנו כאן כדי לתת לכם את השירות הטוב ביותר.',
+        location: data.site.location || formData.location,
+        businessType: formData.businessType,
+        workingHours: formData.workingHours,
+        services: (data.site.services && data.site.services.length > 0) ? data.site.services : [
+          { name: 'שירות ראשון', description: 'תיאור השירות שלך', price: '100 ₪', duration: '60 דקות' }
+        ],
+        stories: [],
+        themeColor: '#2563eb',
+        saleBannerActive: false,
+        saleBannerText: '🔥 מבצע השקה מיוחד!',
+        saleConfig: null,
+        contactPhone: ''
+      };
+
+      setSiteData(newSiteData);
+      setIsEditing(true);
+      localStorage.setItem('generatedSite', JSON.stringify(newSiteData));
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateField = (field: string, value: any) => {
+    if (!isEditing) return;
+    const newData = { ...siteData, [field]: value };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const calculateDiscount = (originalPriceStr: string, percentage: number) => {
+    if (!originalPriceStr) return '0 ₪';
+    const numMatch = originalPriceStr.match(/\d+/);
+    if (!numMatch) return originalPriceStr;
+    const oldPrice = parseInt(numMatch[0], 10);
+    const newPrice = Math.round(oldPrice * (1 - percentage / 100));
+    return `${newPrice} ₪`;
+  };
+
+  const handleSaveSaleConfig = () => {
+    if (!saleConfigForm.discountPercentage || saleConfigForm.discountPercentage <= 0 || saleConfigForm.discountPercentage >= 100) {
+      alert('נא להזין אחוז הנחה תקין (בין 1 ל-99)');
+      return;
+    }
+    if (saleConfigForm.urgencyType === 'time' && !saleConfigForm.endDate) {
+      alert('נא לבחור תאריך סיום למבצע');
+      return;
+    }
+
+    let urgencyText = '';
+    if (saleConfigForm.urgencyType === 'people') {
+      urgencyText = `נשארו ${saleConfigForm.peopleLeft} מקומות בלבד!`;
+    } else {
+      const dateParts = saleConfigForm.endDate.split('-');
+      const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : saleConfigForm.endDate;
+      urgencyText = `המבצע מסתיים ב-${formattedDate} בשעה ${saleConfigForm.endTime}!`;
+    }
+
+    const defaultText = `🔥 מבצע השקה: ב-${saleConfigForm.discountPercentage}% הנחה! - ${urgencyText}`;
+
+    const newData = {
+      ...siteData,
+      saleBannerActive: true,
+      saleBannerText: defaultText,
+      saleConfig: { ...saleConfigForm }
+    };
+
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+    setIsSaleModalOpen(false);
+  };
+
+  // העלאת התמונות ישירות ל-Supabase Storage בשרת
+  const handleStoryImagesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsLoading(true);
+    const uploadedUrls: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const url = await uploadSiteAsset(files[i]);
+      if (url) {
+        uploadedUrls.push(url);
+      } else {
+        alert(`העלאת התמונה ${files[i].name} נכשלה. נסה שוב.`);
+      }
+    }
+
+    setNewStoryImages((prev) => [...prev, ...uploadedUrls]);
+    setIsLoading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeSelectedImage = (indexToRemove: number) => {
+    setNewStoryImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
+
+  const handleSaveStoryGroup = () => {
+    if (!newStoryTitle.trim()) { alert('נא להזין שם לסטורי'); return; }
+    if (newStoryImages.length === 0) { alert('נא לבחור לפחות תמונה אחת'); return; }
+    const newStoryGroup = { title: newStoryTitle, images: newStoryImages };
+    const updatedStories = [...(siteData.stories || []), newStoryGroup];
+    const newData = { ...siteData, stories: updatedStories };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+    setNewStoryTitle('');
+    setNewStoryImages([]);
+    setIsStoryEditorOpen(false);
+  };
+
+  const deleteStoryGroup = (index: number) => {
+    if (!isEditing) return;
+    const newStories = siteData.stories.filter((_: any, i: number) => i !== index);
+    const newData = { ...siteData, stories: newStories };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+    setActiveStoryGroupIndex(null);
+  };
+
+  const nextStoryImage = () => {
+    if (activeStoryGroupIndex === null) return;
+    const currentGroup = siteData.stories[activeStoryGroupIndex];
+    if (activeStoryImageIndex < currentGroup.images.length - 1) {
+      setActiveStoryImageIndex((prev) => prev + 1);
+    } else if (activeStoryGroupIndex < siteData.stories.length - 1) {
+      setActiveStoryGroupIndex((prev) => prev! + 1);
+      setActiveStoryImageIndex(0);
+    } else {
+      setActiveStoryGroupIndex(null);
+    }
+  };
+
+  const prevStoryImage = () => {
+    if (activeStoryGroupIndex === null) return;
+    if (activeStoryImageIndex > 0) {
+      setActiveStoryImageIndex((prev) => prev - 1);
+    } else if (activeStoryGroupIndex > 0) {
+      const prevGroupIndex = activeStoryGroupIndex - 1;
+      setActiveStoryGroupIndex(prevGroupIndex);
+      setActiveStoryImageIndex(siteData.stories[prevGroupIndex].images.length - 1);
+    }
+  };
+
+  const updateService = (index: number, field: string, value: string) => {
+    if (!isEditing) return;
+    const newServices = [...siteData.services];
+    newServices[index][field] = value;
+    const newData = { ...siteData, services: newServices };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const addService = () => {
+    if (!isEditing) return;
+    const newService = { name: 'שירות חדש', description: 'לחץ כאן כדי לערוך את תיאור השירות.', price: '100 ₪', duration: '60 דקות' };
+    const newData = { ...siteData, services: [...siteData.services, newService] };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const removeService = (index: number) => {
+    if (!isEditing) return;
+    if (siteData.services.length <= 1) { alert('חייב להשאיר לפחות שירות אחד באתר.'); return; }
+    const newServices = siteData.services.filter((_: any, i: number) => i !== index);
+    const newData = { ...siteData, services: newServices };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const moveService = (index: number, direction: 'up' | 'down') => {
+    if (!isEditing) return;
+    const newServices = [...siteData.services];
+    if (direction === 'up' && index > 0) {
+      const temp = newServices[index];
+      newServices[index] = newServices[index - 1];
+      newServices[index - 1] = temp;
+    } else if (direction === 'down' && index < newServices.length - 1) {
+      const temp = newServices[index];
+      newServices[index] = newServices[index + 1];
+      newServices[index + 1] = temp;
+    } else {
+      return;
+    }
+    const newData = { ...siteData, services: newServices };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const scrollToContact = () => document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' });
+  const openBookingModal = (serviceName = '') => { setSelectedService(serviceName); setIsBookingModalOpen(true); };
+  const handleFormSubmit = (e: any) => { e.preventDefault(); alert('במערכת האמיתית, הפרטים יישלחו כעת ישירות לבעל העסק!'); };
+
+  const resetAndGoHome = () => { localStorage.removeItem('generatedSite'); setSiteData(null); setShowSettings(false); };
+
+  const getWhatsappLink = () => {
+    if (!siteData.contactPhone) return "#";
+    const cleanPhone = siteData.contactPhone.replace(/\D/g, '');
+    if (cleanPhone.startsWith('0')) {
+      return `https://wa.me/972${cleanPhone.substring(1)}`;
+    }
+    return `https://wa.me/${cleanPhone}`;
+  };
+
+  if (siteData) {
+    return (
+      <div dir="rtl" className="min-h-screen font-sans bg-slate-50 relative pb-32 selection:bg-blue-100 selection:text-blue-900">
+
+        {/* === באנר מבצע עליון === */}
+        {siteData.saleBannerActive && (
+          <div className="bg-[#ff4500] text-white shadow-md relative z-[200] border-b-2 border-orange-600">
+            <div className="max-w-6xl mx-auto flex items-center justify-center px-8 py-3">
+              <input
+                className="bg-transparent text-center text-white outline-none placeholder-white/70 w-full hover:bg-white/10 focus:bg-white/20 rounded px-2 py-1 transition-colors font-extrabold text-base md:text-xl tracking-wide"
+                value={siteData.saleBannerText || ''}
+                onChange={(e) => updateField('saleBannerText', e.target.value)}
+                disabled={!isEditing}
+                placeholder="כתוב כאן את המבצע שלך..."
+              />
+              
+              {isEditing && (
+                <button
+                  onClick={() => updateField('saleBannerActive', false)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 rounded-full w-8 h-8 flex items-center justify-center text-sm transition-colors shadow"
+                  title="כבה מבצע"
+                >
+                  ✖
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* === מודל הגדרת מבצע באחוזים === */}
+        {isSaleModalOpen && (
+          <div className="fixed inset-0 z-[500] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-extrabold text-gray-800">הגדרת מבצע חדש 🎁</h3>
+                <button onClick={() => setIsSaleModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-3xl transition-colors">&times;</button>
+              </div>
+
+              <div className="p-8 flex flex-col gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">על איזה שירות תרצה להפעיל את המבצע?</label>
+                  <select
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    value={saleConfigForm.serviceIndex}
+                    onChange={(e) => setSaleConfigForm({ ...saleConfigForm, serviceIndex: Number(e.target.value) })}
+                  >
+                    {siteData.services?.map((s: any, idx: number) => (
+                      <option key={idx} value={idx}>{s.name} (מחיר מקורי: {s.price})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">כמה אחוזי הנחה?</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      className="w-full bg-white border border-red-300 rounded-xl px-4 py-3 pr-10 text-red-700 outline-none focus:ring-2 focus:ring-red-500 font-extrabold text-lg"
+                      placeholder="20"
+                      value={saleConfigForm.discountPercentage}
+                      onChange={(e) => setSaleConfigForm({ ...saleConfigForm, discountPercentage: Number(e.target.value) })}
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 font-extrabold text-red-700 text-lg">%</span>
+                  </div>
+
+                  <div className="mt-3 bg-red-50 p-3 rounded-lg border border-red-100 flex justify-between items-center text-sm">
+                    <span className="text-gray-600 font-medium">מחיר חדש ללקוח:</span>
+                    <span className="font-extrabold text-red-600 text-lg">
+                      {calculateDiscount(siteData.services[saleConfigForm.serviceIndex]?.price || '0', saleConfigForm.discountPercentage)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
+                  <label className="block text-sm font-bold text-orange-900 mb-3">איך תרצה להגביל את המבצע?</label>
+                  <div className="flex gap-4 mb-4">
+                    <label className={`flex-1 flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border transition-all ${saleConfigForm.urgencyType === 'people' ? 'border-orange-500 ring-2 ring-orange-200' : 'border-orange-200 hover:border-orange-400'}`}>
+                      <input type="radio" name="urgency" value="people" checked={saleConfigForm.urgencyType === 'people'} onChange={() => setSaleConfigForm({ ...saleConfigForm, urgencyType: 'people' })} className="hidden" />
+                      <span className="text-sm font-bold text-gray-700 w-full text-center">כמות אנשים</span>
+                    </label>
+                    <label className={`flex-1 flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border transition-all ${saleConfigForm.urgencyType === 'time' ? 'border-orange-500 ring-2 ring-orange-200' : 'border-orange-200 hover:border-orange-400'}`}>
+                      <input type="radio" name="urgency" value="time" checked={saleConfigForm.urgencyType === 'time'} onChange={() => setSaleConfigForm({ ...saleConfigForm, urgencyType: 'time' })} className="hidden" />
+                      <span className="text-sm font-bold text-gray-700 w-full text-center">זמן מוגבל</span>
+                    </label>
+                  </div>
+
+                  {saleConfigForm.urgencyType === 'people' ? (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">כמה נרשמים למבצע?</label>
+                      <input type="number" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800 outline-none font-bold" min="1" value={saleConfigForm.peopleLeft} onChange={(e) => setSaleConfigForm({ ...saleConfigForm, peopleLeft: Number(e.target.value) })} />
+                    </div>
+                  ) : (
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">תאריך סיום:</label>
+                        <input type="date" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800 outline-none font-medium" value={saleConfigForm.endDate} onChange={(e) => setSaleConfigForm({ ...saleConfigForm, endDate: e.target.value })} />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום:</label>
+                        <input type="time" className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-gray-800 outline-none font-medium" value={saleConfigForm.endTime} onChange={(e) => setSaleConfigForm({ ...saleConfigForm, endTime: e.target.value })} />
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-3 text-center">ההגבלה שתבחר תתווסף לטקסט הבאנר בראש העמוד.</p>
+                </div>
+
+                <button onClick={handleSaveSaleConfig} className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-black py-4 rounded-xl shadow-lg hover:shadow-red-500/30 hover:scale-[1.02] transition-all text-lg">
+                  הפעל מבצע עכשיו! 🚀
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === מודל ניהול שעות פעילות === */}
+        {isHoursModalOpen && (
+          <div className="fixed inset-0 z-[500] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-extrabold text-gray-800">ניהול שעות פעילות ⏰</h3>
+                <button onClick={() => setIsHoursModalOpen(false)} className="text-gray-400 hover:text-gray-800 text-3xl transition-colors">&times;</button>
+              </div>
+              <div className="p-8 flex flex-col gap-6">
+                <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+                  <label className="block text-sm font-bold text-blue-900 mb-2">שינוי שעות פעילות תמידי:</label>
+                  <input className="w-full bg-white border border-blue-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500" placeholder="לדוגמה: א'-ה': 08:00 - 18:00" value={newPermanentHours} onChange={(e) => setNewPermanentHours(e.target.value)} />
+                  <button onClick={() => { if (!newPermanentHours) return; updateField('workingHours', newPermanentHours); setIsHoursModalOpen(false); }} className="mt-3 w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-sm">עדכן שעות תמידיות</button>
+                </div>
+                <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
+                  <label className="block text-sm font-bold text-orange-900 mb-4">שינוי חד-פעמי (סגירה/חופש):</label>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">באיזה תאריך?</label>
+                      <input type="date" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedDate} onChange={(e) => setTempClosedDate(e.target.value)} />
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">משעה (אופציונלי):</label>
+                        <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedStartHour} onChange={(e) => setTempClosedStartHour(e.target.value)} />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-600 mb-1">עד שעה:</label>
+                        <input type="time" className="w-full bg-white border border-orange-200 rounded-xl px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-500" value={tempClosedEndHour} onChange={(e) => setTempClosedEndHour(e.target.value)} />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!tempClosedDate) { alert('נא לבחור תאריך'); return; }
+                        let message = `סגור ביום ${tempClosedDate} (שינוי חד פעמי)`;
+                        if (tempClosedStartHour && tempClosedEndHour) {
+                          message = `בתאריך ${tempClosedDate} לא נקבל קהל בין השעות ${tempClosedStartHour} עד ${tempClosedEndHour} (שינוי חד פעמי)`;
+                        }
+                        updateField('workingHours', message);
+                        alert('החריגה עודכנה בהצלחה! 🛑');
+                        setIsHoursModalOpen(false);
+                      }}
+                      className="w-full bg-orange-600 text-white font-bold py-2.5 rounded-xl hover:bg-orange-700 transition-all shadow-sm mt-2"
+                    >שמור שינוי חד-פעמי</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === מודל הוספת סטורי === */}
+        {isStoryEditorOpen && (
+          <div className="fixed inset-0 z-[500] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-extrabold text-gray-800">הוספת סטורי חדש 📸</h3>
+                <button onClick={() => setIsStoryEditorOpen(false)} className="text-gray-400 hover:text-gray-800 text-3xl transition-colors">&times;</button>
+              </div>
+              <div className="p-8 flex flex-col gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">איך נקרא לסטורי הזה?</label>
+                  <input className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-800 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all" placeholder="לדוגמה: לפני ואחרי / הלקוחות שלנו" value={newStoryTitle} onChange={(e) => setNewStoryTitle(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">בחר תמונות (אפשר לבחור כמה ביחד)</label>
+                  <div onClick={() => fileInputRef.current?.click()} className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all flex flex-col items-center justify-center group">
+                    <span className="text-5xl mb-3 group-hover:scale-110 transition-transform">🖼️</span>
+                    <span className="font-bold text-blue-600 text-lg">לחץ כאן כדי לבחור תמונות</span>
+                  </div>
+                  <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={handleStoryImagesSelect} className="hidden" />
+                </div>
+                {newStoryImages.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">תמונות שנבחרו ({newStoryImages.length}):</label>
+                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                      {newStoryImages.map((img, idx) => (
+                        <div key={idx} className="relative w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm group">
+                          <img src={img} className="w-full h-full object-cover" />
+                          <button onClick={() => removeSelectedImage(idx)} className="absolute top-1 right-1 bg-red-500/90 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">&times;</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 px-8 py-5 border-t border-gray-100 flex gap-4">
+                <button onClick={handleSaveStoryGroup} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-blue-600/30 hover:-translate-y-0.5">שמור והוסף לאתר</button>
+                <button onClick={() => setIsStoryEditorOpen(false)} className="px-8 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-bold py-4 rounded-2xl transition-all shadow-sm">ביטול</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === צופה הסטוריז === */}
+        {activeStoryGroupIndex !== null && siteData.stories?.[activeStoryGroupIndex] && (
+          <div className="fixed inset-0 z-[400] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <button onClick={() => setActiveStoryGroupIndex(null)} className="absolute top-6 right-6 text-white text-4xl hover:text-gray-300 z-50 drop-shadow-md transition-colors">&times;</button>
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40 flex flex-col gap-3">
+              <div className="flex gap-1.5 w-full">
+                {siteData.stories[activeStoryGroupIndex].images.map((_: any, idx: number) => (
+                  <div key={idx} className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === activeStoryImageIndex ? 'bg-white' : 'bg-white/30'}`} />
+                ))}
+              </div>
+              <div className="text-white text-center font-bold text-lg drop-shadow-md tracking-wide">{siteData.stories[activeStoryGroupIndex].title}</div>
+            </div>
+            <div className="relative w-full max-w-md h-[80vh] flex items-center justify-center">
+              <button onClick={prevStoryImage} className="absolute right-0 w-1/2 h-full z-20 flex items-center justify-start px-4 sm:justify-center sm:w-auto sm:right-[-70px] sm:hover:bg-white/10 sm:rounded-full sm:h-14 sm:w-14 cursor-pointer group outline-none">
+                <div className="text-white opacity-0 sm:opacity-100 group-hover:scale-110 transition-all drop-shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg></div>
+              </button>
+              <img src={siteData.stories[activeStoryGroupIndex].images[activeStoryImageIndex]} alt="Story content" className="max-w-full max-h-full object-contain rounded-2xl select-none relative z-10 shadow-2xl" />
+              <button onClick={nextStoryImage} className="absolute left-0 w-1/2 h-full z-20 flex items-center justify-end px-4 sm:justify-center sm:w-auto sm:left-[-70px] sm:hover:bg-white/10 sm:rounded-full sm:h-14 sm:w-14 cursor-pointer group outline-none">
+                <div className="text-white opacity-0 sm:opacity-100 group-hover:scale-110 transition-all drop-shadow-lg"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-10 h-10"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg></div>
+              </button>
+            </div>
+            {isEditing && (
+              <button onClick={() => deleteStoryGroup(activeStoryGroupIndex)} className="absolute bottom-10 bg-red-600/90 text-white px-8 py-4 rounded-full font-bold shadow-2xl hover:bg-red-500 hover:scale-105 transition-all z-50 backdrop-blur-md border border-red-400/30">🗑️ מחק את הקבוצה הזו</button>
+            )}
+          </div>
+        )}
+
+        {/* === מודל קביעת תור === */}
+        {isBookingModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-pointer" onClick={() => setIsBookingModalOpen(false)}></div>
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto relative z-10 flex flex-col animate-in fade-in zoom-in-95 duration-300 border border-gray-100">
+              <button onClick={() => setIsBookingModalOpen(false)} className="absolute top-6 right-6 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-900 w-12 h-12 rounded-full flex items-center justify-center text-2xl z-20 transition-colors">✖</button>
+              <div className="text-center pt-14 pb-8 px-8 border-b border-gray-50">
+                <input className="text-3xl md:text-5xl font-extrabold text-gray-900 bg-transparent text-center outline-none w-full md:w-3/4 mx-auto hover:bg-gray-50 focus:bg-gray-50 rounded-2xl p-3 transition-colors tracking-tight" value={siteData.bookingTitle || 'קביעת תור אונליין 📅'} onChange={(e) => updateField('bookingTitle', e.target.value)} />
+                <textarea className="text-lg md:text-xl text-gray-500 mt-4 bg-transparent text-center outline-none w-full max-w-2xl mx-auto resize-none hover:bg-gray-50 focus:bg-gray-50 rounded-2xl p-3 transition-colors leading-relaxed" value={siteData.bookingText || 'בחרו את השירות, התאריך והשעה הנוחים לכם, ונשריין לכם מקום ביומן באופן אוטומטי.'} onChange={(e) => updateField('bookingText', e.target.value)} rows={2} />
+              </div>
+              <div className="flex flex-col md:flex-row bg-white">
+                <div className="w-full md:w-3/5 p-8 md:p-12 border-b md:border-b-0 md:border-l border-gray-50">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3"><span className="bg-blue-50 text-blue-600 w-10 h-10 rounded-full flex items-center justify-center text-base">1</span>פרטי התור</h3>
+                  <div className="mb-8">
+                    <label className="block text-sm font-bold text-gray-700 mb-3">איזה שירות תרצו להזמין?</label>
+                    <select className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer" value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
+                      <option value="" disabled>בחרו שירות מתוך הרשימה...</option>
+                      {siteData.services?.map((s: any, i: number) => (
+                        <option key={i} value={s.name}>{s.name} ({s.duration || '60 דקות'})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3">בחרו תאריך</label>
+                      <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-3">בחרו שעה מועדפת</label>
+                      <select className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all bg-gray-50 text-gray-800 font-medium cursor-pointer appearance-none">
+                        <option>09:00 - 10:00</option>
+                        <option>10:00 - 11:00</option>
+                        <option>12:00 - 13:00</option>
+                        <option>15:00 - 16:00</option>
+                        <option>17:00 - 18:00</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full md:w-2/5 p-8 md:p-12 bg-gray-50/50 flex flex-col justify-center">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3"><span className="bg-gray-200 text-gray-600 w-10 h-10 rounded-full flex items-center justify-center text-base">2</span>פרטים לאישור</h3>
+                  <div className="flex flex-col gap-5">
+                    <input type="text" placeholder="שם מלא" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white transition-all" required />
+                    <input type="tel" placeholder="מספר נייד" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white text-right transition-all" dir="rtl" required />
+                    <button className="w-full py-5 mt-2 rounded-2xl font-bold text-white shadow-xl text-lg hover:-translate-y-1 hover:shadow-2xl transition-all" style={{ backgroundColor: siteData.themeColor }} onClick={() => { if (!selectedService) { alert('אנא בחרו שירות.'); return; } alert('התור נרשם!'); setIsBookingModalOpen(false); }}>
+                      שריין לי את התור
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === הדר עליון === */}
+        <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-[100] transition-all">
+          <input
+            className="text-2xl font-extrabold text-gray-900 bg-transparent outline-none w-auto max-w-[200px] md:max-w-md transition-colors hover:bg-gray-100/50 focus:bg-gray-100 cursor-text rounded-lg px-2 py-1 tracking-tight"
+            value={siteData.businessName || 'שם העסק'}
+            onChange={(e) => updateField('businessName', e.target.value)}
+          />
+
+          <div className="flex items-center gap-3 md:gap-5 relative">
+            <button onClick={() => setShowSettings(!showSettings)} className="bg-gray-50 p-2.5 rounded-full border border-gray-200 hover:bg-gray-100 hover:scale-105 transition-all text-xl shadow-sm">⚙️</button>
+            {showSettings && (
+              <div className="absolute top-14 left-0 bg-white border border-gray-100 shadow-2xl rounded-2xl w-64 overflow-hidden flex flex-col z-[100] animate-in slide-in-from-top-2">
+                {!siteData.saleBannerActive && (
+                  <button className="px-5 py-4 text-right hover:bg-orange-50 text-orange-600 font-bold flex justify-between items-center transition-colors border-b border-gray-50" onClick={() => { setIsSaleModalOpen(true); setShowSettings(false); }}>
+                    <span>הפעל סייל/מבצע</span><span>📣</span>
+                  </button>
+                )}
+                <button className="px-5 py-4 text-right hover:bg-gray-50 border-b border-gray-50 text-gray-700 font-medium flex justify-between items-center transition-colors" onClick={() => setShowSettings(false)}><span>המשך עריכה</span><span>✏️</span></button>
+                <button className="px-5 py-4 text-right hover:bg-red-50 text-red-600 font-medium flex justify-between items-center transition-colors border-b border-gray-50" onClick={resetAndGoHome}><span>יצירת אתר חדש</span><span>🔄</span></button>
+                
+                <button className="px-5 py-4 text-right hover:bg-red-100 text-red-700 font-bold flex justify-between items-center transition-colors bg-red-50/50" onClick={() => { alert('במערכת האמיתית, כפתור זה יעביר אותך לפורטל ניהול המנוי לביטול התשלום באופן אוטומטי.'); setShowSettings(false); }}>
+                  <span>הפסקת תשלום (ביטול מנוי)</span><span>💳</span>
+                </button>
+              </div>
+            )}
+            <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-50 text-gray-800 border border-gray-200 px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-gray-100 hover:shadow transition-all">קביעת תור</button>
+            <button onClick={scrollToContact} className="text-white px-7 py-2.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={{ backgroundColor: siteData.themeColor }}>צור קשר</button>
+          </div>
+        </header>
+
+        {/* === פאנל צבעים מרחף === */}
+        <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-md px-6 py-3.5 rounded-full shadow-2xl border border-gray-100 flex items-center gap-3 transition-all">
+          <span className="text-sm font-bold text-gray-700 ml-2">צבע מותג:</span>
+          {themeColors.map((color) => (
+            <button key={color} onClick={() => updateField('themeColor', color)} className={`w-8 h-8 rounded-full transition-all ${siteData.themeColor === color ? 'ring-4 ring-offset-2 ring-gray-200 scale-110 shadow-md' : 'border border-gray-200 shadow-sm hover:scale-110'}`} style={{ backgroundColor: color }} />
+          ))}
+        </div>
+
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4">
+          <button onClick={() => router.push('/checkout')} className="bg-gray-900 text-white px-10 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-black hover:shadow-black/20 hover:-translate-y-1 transition-all border border-gray-800">
+            <span className="font-bold text-lg">פרסם את האתר ב-29 ₪ לחודש</span>
+            <span className="text-xl">🚀</span>
+          </button>
+        </div>
+
+        {/* === Hero Section === */}
+        <div className="pt-8 pb-12 px-4 max-w-7xl mx-auto">
+          <div className="relative w-full h-[400px] md:h-[550px] overflow-hidden rounded-[2.5rem] shadow-2xl shadow-blue-900/10 border border-gray-200/50 bg-gray-900 flex flex-col justify-center items-center group">
+            <img src={siteData.generatedImageUrl || `https://image.pollinations.ai/prompt/${siteData.imageKeywords || 'modern business'}?width=1920&height=1080&nologo=true`} alt="תמונת רקע לעסק" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-1000 ease-in-out" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+            <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center w-full px-6">
+              <h1 contentEditable={isEditing} suppressContentEditableWarning={true} className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white w-full bg-transparent text-center outline-none p-2 transition-all drop-shadow-2xl hover:bg-black/30 focus:bg-black/50 cursor-text break-words tracking-tight" onBlur={(e) => updateField('heroTitle', e.currentTarget.textContent || '')}>{siteData.heroTitle}</h1>
+              <textarea className="text-xl md:text-2xl mt-6 w-full max-w-3xl text-gray-100 bg-transparent text-center outline-none rounded-xl p-3 transition-all resize-none drop-shadow-lg leading-relaxed hover:bg-black/30 focus:bg-black/50 cursor-text font-medium" value={siteData.heroSubtitle} onChange={(e) => updateField('heroSubtitle', e.target.value)} rows={2} />
+            </div>
+          </div>
+        </div>
+
+        {/* === סטוריז === */}
+        <div className="w-full bg-transparent pb-12">
+          <div className="max-w-5xl mx-auto px-4 flex gap-6 overflow-x-auto no-scrollbar items-start">
+            {isEditing && (
+              <div className="flex flex-col items-center gap-3 min-w-[90px]">
+                <div onClick={() => setIsStoryEditorOpen(true)} className="w-[85px] h-[85px] rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-white hover:border-gray-400 hover:shadow-md transition-all bg-gray-50 shadow-sm">
+                  <span className="text-3xl text-gray-400">+</span>
+                </div>
+                <span className="text-xs font-bold text-gray-500 bg-white/50 px-2 py-1 rounded-full">הוסף סטורי</span>
+              </div>
+            )}
+            {siteData.stories?.map((storyGroup: any, index: number) => (
+              <div key={index} className="flex flex-col items-center gap-3 min-w-[90px]">
+                <div onClick={() => { setActiveStoryGroupIndex(index); setActiveStoryImageIndex(0); }} className="w-[85px] h-[85px] rounded-full p-[3px] cursor-pointer hover:scale-105 transition-transform shadow-md" style={{ background: `linear-gradient(to top right, ${siteData.themeColor}, #fcd34d)` }}>
+                  <div className="w-full h-full rounded-full border-[3px] border-white overflow-hidden bg-white">
+                    <img src={storyGroup.images[0]} alt={storyGroup.title} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+                <div className="text-xs font-bold text-center text-gray-700 w-full truncate px-1">{storyGroup.title}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* === על העסק + שעות פעילות === */}
+        <div className="py-12 px-4 max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-8 tracking-tight">על העסק</h2>
+          <textarea
+            className="text-lg md:text-xl text-gray-600 w-full bg-transparent text-center outline-none rounded-2xl p-6 transition-all resize-none hover:bg-white focus:bg-white focus:ring-4 focus:ring-gray-100 cursor-text leading-relaxed font-medium"
+            value={siteData.aboutText}
+            onChange={(e) => updateField('aboutText', e.target.value)}
+            rows={4}
+          />
+          <div className="mt-8 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm max-w-xl mx-auto flex flex-col items-center">
+            <div className="flex items-center gap-2 text-gray-800 font-bold mb-2 text-center flex-wrap justify-center">
+              <span>⏰ שעות פעילות:</span>
+              <span className="text-gray-600 font-normal">{siteData.workingHours || 'ימים א\'-ה\': 09:00 - 19:00'}</span>
+            </div>
+            {isEditing && (
+              <button onClick={() => setIsHoursModalOpen(true)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-full transition-all mt-2 shadow-sm">
+                ⚙️ ערוך שעות (שינוי תמידי / חד-פעמי)
+              </button>
+            )}
+          </div>
+          <div className="mt-8 flex flex-col items-center justify-center gap-4">
+            <div className="inline-flex items-center bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-full text-sm font-bold shadow-sm">
+              {siteData.businessType === 'physical' ? '📍 כתובת העסק:' : '📍 אזורי שירות:'}
+              <input className="bg-transparent outline-none cursor-text hover:bg-gray-50 rounded px-2 mr-2 w-[220px] text-gray-900 font-extrabold focus:bg-gray-50 transition-colors" value={siteData.location} onChange={(e) => updateField('location', e.target.value)} />
+            </div>
+            
+            {siteData.businessType === 'physical' && siteData.location && (
+              <div className="flex flex-wrap gap-3 justify-center mt-3">
+                <a href={`https://waze.com/ul?q=${encodeURIComponent(siteData.location)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-bold bg-blue-50 text-blue-700 px-5 py-2.5 rounded-full hover:bg-blue-100 hover:scale-105 transition-all shadow-sm">🚙 Waze</a>
+                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteData.location)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-bold bg-red-50 text-red-700 px-5 py-2.5 rounded-full hover:bg-red-100 hover:scale-105 transition-all shadow-sm">📍 Google Maps</a>
+                <a href={`http://maps.apple.com/?q=${encodeURIComponent(siteData.location)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-bold bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full hover:bg-gray-200 hover:scale-105 transition-all shadow-sm">🗺️ Apple Maps</a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* === שירותים ומחירון === */}
+        <div className="py-24 px-4 bg-white border-t border-gray-100">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16 tracking-tight">השירותים והמחירון שלנו</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {siteData.services?.map((service: any, index: number) => {
+                const isServiceOnSale = siteData.saleBannerActive && siteData.saleConfig?.serviceIndex === index;
+
+                return (
+                  <div key={index} className={`bg-white p-8 rounded-[2rem] shadow-sm border transition-all duration-300 relative group flex flex-col h-full pt-14 hover:-translate-y-2 ${isServiceOnSale ? 'border-red-200 hover:border-red-300 hover:shadow-red-500/10' : 'border-gray-100 hover:shadow-xl hover:border-gray-200'}`}>
+
+                    {isServiceOnSale && (
+                      <div className="absolute -top-5 -right-5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-extrabold px-6 py-2 rounded-full shadow-lg transform rotate-6 border-[3px] border-white z-10 text-lg">
+                        מבצע! 🎁
+                      </div>
+                    )}
+
+                    <div className="absolute top-4 left-4">
+                      <button onClick={() => removeService(index)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all shadow-sm">✖</button>
+                    </div>
+
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {index > 0 && <button onClick={() => moveService(index, 'up')} className="bg-gray-50 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 hover:text-gray-900 transition-all shadow-sm">⬆️</button>}
+                      {index < siteData.services.length - 1 && <button onClick={() => moveService(index, 'down')} className="bg-gray-50 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 hover:text-gray-900 transition-all shadow-sm">⬇️</button>}
+                    </div>
+
+                    <input className="text-2xl font-extrabold w-full bg-transparent outline-none rounded-xl p-2 mb-3 text-gray-900 text-center md:text-right hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors" value={service.name} onChange={(e) => updateService(index, 'name', e.target.value)} />
+                    <textarea className="text-gray-500 w-full bg-transparent outline-none rounded-xl p-2 text-base resize-none text-center md:text-right flex-grow hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors leading-relaxed" value={service.description} onChange={(e) => updateService(index, 'description', e.target.value)} rows={4} />
+
+                    <div className="mt-8 text-center pt-6 border-t border-gray-50">
+                      <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-4 font-medium">
+                        <span>⏱️ זמן משוער:</span>
+                        <input className="bg-transparent outline-none w-24 text-right text-gray-700 font-bold hover:bg-gray-50 focus:bg-gray-50 cursor-text rounded px-2 py-1 transition-colors" value={service.duration || '60 דקות'} onChange={(e) => updateService(index, 'duration', e.target.value)} />
+                      </div>
+
+                      {isServiceOnSale ? (
+                        <div className="flex flex-col items-center">
+                          <input
+                            className="text-gray-400 font-bold line-through decoration-red-500/70 decoration-[3px] mb-2 bg-transparent text-center outline-none hover:bg-gray-50 w-full rounded"
+                            value={service.price}
+                            onChange={(e) => updateService(index, 'price', e.target.value)}
+                          />
+
+                          <div className="inline-block px-8 py-4 rounded-2xl font-black text-white outline-none text-center w-full shadow-lg transition-all duration-300 cursor-default bg-gradient-to-r from-red-600 to-orange-500 shadow-red-500/40 hover:-translate-y-0.5 text-2xl tracking-wide">
+                            {calculateDiscount(service.price, siteData.saleConfig.discountPercentage)}
+                          </div>
+                        </div>
+                      ) : (
+                        <input
+                          className="inline-block px-8 py-4 rounded-2xl font-bold text-white outline-none text-center w-full shadow-lg transition-all duration-300 hover:opacity-90 hover:shadow-xl hover:-translate-y-0.5 focus:ring-4 cursor-text text-xl"
+                          style={{ backgroundColor: siteData.themeColor, boxShadow: `0 10px 15px -3px ${siteData.themeColor}40` }}
+                          value={service.price}
+                          onChange={(e) => updateService(index, 'price', e.target.value)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-16 text-center">
+              <button onClick={addService} className="bg-gray-50 border-2 border-dashed border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900 hover:bg-white font-bold py-5 px-10 rounded-full transition-all flex items-center gap-3 mx-auto shadow-sm hover:shadow-md">
+                <span className="text-xl">➕</span><span>הוסף שירות חדש</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* === צור קשר === */}
+        <div id="contact-section" className="py-24 px-4 bg-gray-900 border-t border-gray-800">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-center text-white mb-16 tracking-tight">דברו איתנו</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center">
+              <div className="text-center md:text-right">
+                <textarea value={siteData.contactText || 'אשמח לשמוע מכם!'} onChange={(e) => updateField('contactText', e.target.value)} className="text-xl md:text-2xl text-gray-300 bg-transparent outline-none w-full resize-none hover:bg-gray-800 focus:bg-gray-800 p-4 rounded-2xl cursor-text font-medium leading-relaxed transition-colors" rows={3} />
+                <div className="mt-8 p-8 bg-gray-800 rounded-[2rem] border border-gray-700 text-right shadow-xl">
+                  <label className="block text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">📞 הגדרת וואטסאפ לעסק:</label>
+                  <input className="w-full p-4 bg-gray-900 border border-gray-700 text-white rounded-xl outline-none text-left font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" dir="ltr" placeholder="0501234567" value={siteData.contactPhone || ''} onChange={(e) => updateField('contactPhone', e.target.value)} />
+                </div>
+              </div>
+              <div className="bg-gray-800 p-10 md:p-12 rounded-[2.5rem] shadow-2xl border border-gray-700 relative overflow-hidden">
+                <form onSubmit={handleFormSubmit} className="flex flex-col gap-5 relative z-10">
+                  <input type="text" placeholder="שם מלא" className="w-full p-4 rounded-xl border border-gray-700 bg-gray-900 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all" required />
+                  <input type="tel" placeholder="מספר טלפון" className="w-full p-4 rounded-xl border border-gray-700 bg-gray-900 text-white placeholder-gray-500 text-right transition-all" dir="rtl" required />
+                  <textarea placeholder="במה אפשר לעזור?" className="w-full p-4 rounded-xl border border-gray-700 bg-gray-900 text-white placeholder-gray-500 resize-none transition-all" rows={4} />
+                  <button type="submit" className="w-full py-5 mt-2 rounded-xl font-bold text-white shadow-xl text-lg hover:-translate-y-1 transition-all" style={{ backgroundColor: siteData.themeColor }}>שלח פניה</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* === כפתור וואטסאפ צף === */}
+        {siteData.contactPhone && (
+          <a
+            href={getWhatsappLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fixed bottom-6 right-6 bg-[#25D366] text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all z-[300]"
+            title="דברו איתנו בוואטסאפ"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+            </svg>
+          </a>
+        )}
+
+      </div>
+    );
+  }
+
+  /* === טופס יצירת אתר ראשוני === */
+  return (
+    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 p-4 font-sans py-12">
+      <div className="max-w-2xl w-full bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 p-8 md:p-12 border border-gray-100 relative overflow-hidden">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2 text-center tracking-tight">האתר המקצועי שלך בדרך 🚀</h1>
+        <p className="text-gray-500 text-center mb-8 text-sm">מלא את הפרטים הבאים כדי שה-AI שלנו יבנה לך אתר מעוצב בשניות</p>
+        
+        <form onSubmit={handleGenerate} className="space-y-5">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">שם העסק *</label>
+            <input
+              type="text"
+              name="businessName"
+              required
+              placeholder="לדוגמה: המספרה של יוסי / משרד עורכי דין כהן"
+              value={formData.businessName}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">תחום הפעילות *</label>
+            <input
+              type="text"
+              name="industry"
+              required
+              placeholder="לדוגמה: עיצוב שיער לגברים / עורך דין לענייני משפחה"
+              value={formData.industry}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">סוג השירות</label>
+            <select
+              name="businessType"
+              value={formData.businessType}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            >
+              <option value="physical">מקום פיזי (הלקוחות מגיעים אליי)</option>
+              <option value="home">עד בית הלקוח / אונליין</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">מיקום / כתובת / אזורי שירות</label>
+            <input
+              type="text"
+              name="location"
+              placeholder="לדוגמה: הרצל 15, תל אביב / אזור המרכז והשפלה"
+              value={formData.location}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">שירותים עיקריים (מופרדים בפסיקים)</label>
+            <input
+              type="text"
+              name="services"
+              placeholder="לדוגמה: תספורת גברים, עיצוב זקן, צביעת שיער"
+              value={formData.services}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">היתרון המרכזי / למה לבחור בנו?</label>
+            <input
+              type="text"
+              name="superpower"
+              placeholder="לדוגמה: ניסיון של 15 שנה, יחס אישי ומחירים הוגנים"
+              value={formData.superpower}
+              onChange={handleChange}
+              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-6 bg-blue-600 text-white font-extrabold py-5 rounded-2xl hover:bg-blue-700 transition-all text-lg shadow-xl shadow-blue-600/30 hover:-translate-y-1 disabled:opacity-50 flex items-center justify-center gap-3"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>ה-AI יוצר את האתר שלך...</span>
+              </>
+            ) : (
+              <span>צור לי אתר עכשיו ✨</span>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
