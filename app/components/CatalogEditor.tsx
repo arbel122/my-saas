@@ -51,15 +51,25 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
     setDraft({ ...category, items: category.items.map((i) => ({ ...i })) });
     setIsNew(false);
     setError('');
+
+    // קטגוריה ריקה (נוצרה בטופס הפתיחה): ישר לשאלות ה-AI, כדי שיבנה את המוצרים
+    if (category.items.length === 0) {
+      setQuestions([]);
+      setAnswers([]);
+      setStep('name');
+      fetchQuestions(category.name);
+      return;
+    }
     setStep('review');
   };
 
-  const fetchQuestions = async () => {
-    if (!draft.name.trim()) return setError('נא לכתוב שם לקטגוריה.');
+  const fetchQuestions = async (nameOverride?: string) => {
+    const categoryName = (nameOverride ?? draft.name).trim();
+    if (!categoryName) return setError('נא לכתוב שם לקטגוריה.');
     setBusy(true);
     setError('');
     try {
-      const data = await callCatalog({ action: 'questions', category: draft.name, businessName, industry });
+      const data = await callCatalog({ action: 'questions', category: categoryName, businessName, industry });
       setQuestions(data.questions);
       setAnswers(data.questions.map(() => ''));
       setStep('questions');
@@ -123,7 +133,7 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
               style={{ backgroundColor: themeColor }}
               title="לחצו לעריכה"
             >
-              {c.name} ✏️
+              {c.name} {c.items.length === 0 ? '➕ הוסיפו מוצרים' : '✏️'}
             </button>
           ))}
           <button onClick={startNew} className="bg-white border-2 border-dashed border-gray-300 text-gray-600 hover:border-gray-500 hover:text-gray-900 font-bold px-6 py-3 rounded-full transition-all">
@@ -149,7 +159,7 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
                 <>
                   <label className="block text-sm font-bold text-gray-700">איך תקראו לקטגוריה? (זה יהיה שם הכפתור באתר)</label>
                   <input className={inputCls} placeholder="לדוגמה: מטענים ניידים" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} maxLength={60} />
-                  <button onClick={fetchQuestions} disabled={busy} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-60">
+                  <button onClick={() => fetchQuestions()} disabled={busy} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-60">
                     {busy ? 'ה-AI מכין שאלות...' : 'המשך'}
                   </button>
                 </>

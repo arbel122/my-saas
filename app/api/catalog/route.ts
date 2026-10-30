@@ -15,7 +15,17 @@ function cleanJson(raw: string) {
   return cleaned.trim();
 }
 
+// המודל לפעמים מחזיר JSON שבור. מנסים פעם אחת נוספת לפני שמוותרים.
 async function askAi(prompt: string): Promise<unknown> {
+  try {
+    return await askAiOnce(prompt);
+  } catch (firstError) {
+    console.warn('Catalog AI attempt failed, retrying:', firstError);
+    return askAiOnce(prompt);
+  }
+}
+
+async function askAiOnce(prompt: string): Promise<unknown> {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -70,7 +80,8 @@ ${context}
           ? result.questions.map((q) => text(q, 200)).filter(Boolean).slice(0, 4)
           : [];
         return NextResponse.json({ questions: questions.length >= 2 ? questions : FALLBACK_QUESTIONS });
-      } catch {
+      } catch (err) {
+        console.error('Catalog questions failed, using fallback questions:', err);
         return NextResponse.json({ questions: FALLBACK_QUESTIONS });
       }
     }

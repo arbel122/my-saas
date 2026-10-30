@@ -17,7 +17,11 @@ export default function CreatePage() {
     services: '',
     location: '',
     businessType: 'physical',
-    workingHours: 'ימים א\'-ה\': 09:00 - 19:00'
+    workingHours: 'ימים א\'-ה\': 09:00 - 19:00',
+    // 'yes' / 'no' / '' (עוד לא נענה). חובה לענות על שתי השאלות לפני יצירת האתר.
+    needsBooking: '',
+    sellsProducts: '',
+    productCategories: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +101,24 @@ export default function CreatePage() {
       alert('אנא מלאו את שם העסק ותחום הפעילות');
       return;
     }
+    if (!formData.needsBooking || !formData.sellsProducts) {
+      alert('אנא ענו על השאלות: האם לקוחות קובעים אצלכם תור, והאם אתם מוכרים מוצרים.');
+      return;
+    }
+
+    const wantsBooking = formData.needsBooking === 'yes';
+    const sellsProducts = formData.sellsProducts === 'yes';
+    // סעיף השירותים נחוץ כשיש תורים, או כשהעסק לא מוכר מוצרים. עסק של מוצרים בלבד מקבל קטגוריות במקומו.
+    const showServices = wantsBooking || !sellsProducts;
+
+    const productCategories = sellsProducts
+      ? formData.productCategories
+          .split(/[,\n،]/)
+          .map((name) => name.trim())
+          .filter(Boolean)
+          .slice(0, 8)
+          .map((name, i) => ({ id: `cat-${Date.now()}-${i}`, name, items: [] }))
+      : [];
 
     setIsLoading(true);
 
@@ -106,7 +128,9 @@ export default function CreatePage() {
       סוג שירות: ${formData.businessType === 'physical' ? 'מקום פיזי (הלקוח מגיע לעסק)' : 'עד בית הלקוח'}.
       שעות פעילות: ${formData.workingHours}.
       היתרון המרכזי / למה לבחור בנו: ${formData.superpower}.
-      שירותים עיקריים: ${formData.services}.
+      ${showServices ? `שירותים עיקריים: ${formData.services}.` : 'העסק מוכר מוצרים בלבד ואין בו שירותים או תורים. כתוב את הטקסטים סביב המוצרים.'}
+      ${sellsProducts ? `העסק מוכר גם מוצרים בקטגוריות: ${formData.productCategories || 'לא צוין'}.` : ''}
+      ${wantsBooking ? 'הלקוחות קובעים תור מראש.' : 'הלקוחות מגיעים או מזמינים בלי לקבוע תור, ולכן אל תכתוב על קביעת תור.'}
       אזור/כתובת מתן שירות: ${formData.location}.
     `;
 
@@ -131,8 +155,10 @@ export default function CreatePage() {
         workingHours: formatSchedule(DEFAULT_SCHEDULE),
         schedule: DEFAULT_SCHEDULE,
         closures: [],
-        bookingEnabled: data.site.needsBooking !== false,
-        catalog: [],
+        bookingEnabled: wantsBooking,
+        showServices,
+        showProducts: sellsProducts,
+        catalog: productCategories,
         services: (data.site.services && data.site.services.length > 0) ? data.site.services : [
           { name: 'שירות ראשון', description: 'תיאור השירות שלך', price: '100 ₪', duration: '60 דקות' }
         ],
@@ -616,6 +642,14 @@ export default function CreatePage() {
                 <button className="px-5 py-4 text-right hover:bg-blue-50 border-b border-gray-50 text-blue-700 font-bold flex justify-between items-center transition-colors" onClick={() => { updateField('bookingEnabled', siteData.bookingEnabled === false); setShowSettings(false); }}>
                   <span>{siteData.bookingEnabled === false ? 'הפעל קביעת תורים' : 'כבה קביעת תורים'}</span><span>📅</span>
                 </button>
+                <button className="px-5 py-4 text-right hover:bg-blue-50 border-b border-gray-50 text-blue-700 font-bold flex justify-between items-center transition-colors" onClick={() => { updateField('showServices', siteData.showServices === false); setShowSettings(false); }}>
+                  <span>{siteData.showServices === false ? 'הצג סעיף שירותים' : 'הסתר סעיף שירותים'}</span><span>💈</span>
+                </button>
+                {(siteData.catalog || []).length === 0 && (
+                  <button className="px-5 py-4 text-right hover:bg-blue-50 border-b border-gray-50 text-blue-700 font-bold flex justify-between items-center transition-colors" onClick={() => { updateField('showProducts', siteData.showProducts !== true); setShowSettings(false); }}>
+                    <span>{siteData.showProducts === true ? 'הסתר סעיף מוצרים' : 'הוסף סעיף מוצרים'}</span><span>🛍️</span>
+                  </button>
+                )}
                 <button className="px-5 py-4 text-right hover:bg-gray-50 border-b border-gray-50 text-gray-700 font-medium flex justify-between items-center transition-colors" onClick={() => setShowSettings(false)}><span>המשך עריכה</span><span>✏️</span></button>
                 <button className="px-5 py-4 text-right hover:bg-red-50 text-red-600 font-medium flex justify-between items-center transition-colors border-b border-gray-50" onClick={resetAndGoHome}><span>יצירת אתר חדש</span><span>🔄</span></button>
                 
@@ -721,7 +755,8 @@ export default function CreatePage() {
         </div>
 
         {/* === שירותים ומחירון === */}
-        <div className="py-24 px-4 bg-white border-t border-gray-100">
+        {siteData.showServices !== false && (
+<div className="py-24 px-4 bg-white border-t border-gray-100">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16 tracking-tight">השירותים והמחירון שלנו</h2>
 
@@ -789,15 +824,18 @@ export default function CreatePage() {
             </div>
           </div>
         </div>
+)}
 
-        {/* === קטגוריות מוצרים === */}
-        <CatalogEditor
-          catalog={siteData.catalog || []}
-          onChange={(catalog) => updateField('catalog', catalog)}
-          themeColor={siteData.themeColor}
-          businessName={siteData.businessName}
-          industry={formData.industry}
-        />
+{/* === קטגוריות מוצרים === */}
+        {(siteData.showProducts === true || (siteData.catalog || []).length > 0) && (
+          <CatalogEditor
+            catalog={siteData.catalog || []}
+            onChange={(catalog) => updateField('catalog', catalog)}
+            themeColor={siteData.themeColor}
+            businessName={siteData.businessName}
+            industry={formData.industry}
+          />
+        )}
 
         {/* === צור קשר === */}
         <div id="contact-section" className="py-24 px-4 bg-gray-900 border-t border-gray-800">
@@ -890,6 +928,38 @@ export default function CreatePage() {
           </div>
 
           <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">האם לקוחות קובעים אצלכם תור מראש? *</label>
+            <div className="flex gap-3">
+              {([['yes', 'כן, צריך קביעת תור'], ['no', 'לא, פשוט מגיעים']] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  onClick={() => setFormData((prev) => ({ ...prev, needsBooking: value }))}
+                  className={`flex-1 p-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.needsBooking === value ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">האם אתם מוכרים מוצרים? *</label>
+            <div className="flex gap-3">
+              {([['yes', 'כן, אנחנו מוכרים מוצרים'], ['no', 'לא, רק שירותים']] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  onClick={() => setFormData((prev) => ({ ...prev, sellsProducts: value }))}
+                  className={`flex-1 p-4 rounded-xl border-2 font-bold text-sm transition-all ${formData.sellsProducts === value ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">מיקום / כתובת / אזורי שירות</label>
             <input
               type="text"
@@ -901,17 +971,34 @@ export default function CreatePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">שירותים עיקריים (מופרדים בפסיקים)</label>
-            <input
-              type="text"
-              name="services"
-              placeholder="לדוגמה: תספורת גברים, עיצוב זקן, צביעת שיער"
-              value={formData.services}
-              onChange={handleChange}
-              className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
-            />
-          </div>
+          {(formData.needsBooking === 'yes' || formData.sellsProducts !== 'yes') && (
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">שירותים עיקריים (מופרדים בפסיקים)</label>
+              <input
+                type="text"
+                name="services"
+                placeholder="לדוגמה: תספורת גברים, עיצוב זקן, צביעת שיער"
+                value={formData.services}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+              />
+            </div>
+          )}
+
+          {formData.sellsProducts === 'yes' && (
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">אילו קטגוריות מוצרים אתם מוכרים? (מופרדות בפסיקים)</label>
+              <input
+                type="text"
+                name="productCategories"
+                placeholder="לדוגמה: מטענים ניידים, כיסויים, אוזניות"
+                value={formData.productCategories}
+                onChange={handleChange}
+                className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1.5">אחרי יצירת האתר, ה-AI ישאל כמה שאלות על כל קטגוריה ויבנה את רשימת המוצרים.</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1.5">היתרון המרכזי / למה לבחור בנו?</label>

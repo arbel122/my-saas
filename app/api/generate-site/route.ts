@@ -55,7 +55,6 @@ export async function POST(req: Request) {
   "imageKeyword": "English ONLY! 1 or 2 words describing the profession (e.g. hair salon, plumber, gym, lawyer)",
   "aboutText": "פסקה שיווקית חמה ומקצועית המספרת על העסק. (ללא מרכאות כפולות)",
   "location": "מיקום העסק",
-  "needsBooking": true או false (true אם הלקוחות בדרך כלל קובעים תור מראש, כמו מספרה, קוסמטיקה, מטפלים, רופאים, עורכי דין. false אם פשוט מגיעים או מזמינים בלי תור, כמו קצביה, מכולת, מסעדה, חנות, בית מרקחת),
   "services": [
     { "name": "שם השירות", "description": "תיאור השירות", "price": "מחיר", "duration": "משך בדקות, למשל 60 דקות" }
   ]
@@ -117,9 +116,7 @@ export async function POST(req: Request) {
       subtitle: parsedData.subtitle || "איכות ושירות ללא פשרות.",
       hero_image: finalImageUrl,
       aboutText: parsedData.aboutText || "כאן כדי לתת לכם את השירות הטוב ביותר.",
-      location: parsedData.location || "שירות ארצי",
-      needsBooking: parsedData.needsBooking !== false && parsedData.needsBooking !== "false",
-      services: parsedData.services || []
+      location: parsedData.location || "שירות ארצי",      services: parsedData.services || []
     };
 
     return NextResponse.json({ success: true, site: finalSiteData });

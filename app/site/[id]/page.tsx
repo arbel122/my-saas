@@ -241,7 +241,8 @@ export default function PublicSitePage() {
         )}
       </div>
 
-      <div className="py-20 px-4 bg-gray-50 border-t">
+      {siteData.showServices !== false && (
+<div className="py-20 px-4 bg-gray-50 border-t">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">השירותים שלנו</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -268,8 +269,9 @@ export default function PublicSitePage() {
           </div>
         </div>
       </div>
+)}
 
-      <CatalogSection
+<CatalogSection
         catalog={siteData.catalog}
         themeColor={siteData.themeColor}
         phone={siteData.contactPhone}
