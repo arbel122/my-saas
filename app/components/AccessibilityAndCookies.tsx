@@ -24,13 +24,13 @@ export default function AccessibilityAndCookies() {
     <>
       {/* === באנר קוקיז === */}
       {showCookieBanner && (
-        <div className="fixed bottom-0 inset-x-0 bg-gray-900 text-white p-4 z-[600] flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-800 shadow-2xl" dir="rtl">
-          <p className="text-sm font-medium text-gray-300">
+        <div className="fixed bottom-0 inset-x-0 bg-gray-900 text-white p-3 sm:p-4 z-[600] flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 border-t border-gray-800 shadow-2xl" dir="rtl">
+          <p className="text-xs sm:text-sm font-medium text-gray-300 leading-snug">
             אתר זה משתמש בעוגיות (Cookies) ובזיכרון מקומי כדי להבטיח את חווית המשתמש הטובה ביותר, ניתוח תנועה ושמירת הגדרות.
           </p>
           <button
             onClick={acceptCookies}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl text-sm transition-all whitespace-nowrap shadow-md"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-xl text-sm transition-all whitespace-nowrap shadow-md w-full sm:w-auto"
           >
             אני מאשר/ת 👍
           </button>
@@ -38,7 +38,8 @@ export default function AccessibilityAndCookies() {
       )}
 
       {/* === כפתור ותפריט נגישות === */}
-      <div className="fixed bottom-6 left-6 z-[300]" dir="rtl">
+      {/* מתחת לחלונות (z-200) כדי שלא יכסה שדות בטפסים, ומעל לכותרת */}
+      <div className="fixed bottom-6 left-6 z-[150]" dir="rtl">
         <button
           onClick={() => setShowAccessMenu(!showAccessMenu)}
           className="bg-blue-700 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all text-xl font-bold border-2 border-white"

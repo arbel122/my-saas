@@ -661,22 +661,27 @@ export default function CreatePage() {
             {siteData.bookingEnabled !== false && (
               <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-50 text-gray-800 border border-gray-200 px-6 py-2.5 rounded-full font-bold shadow-sm hover:bg-gray-100 hover:shadow transition-all">קביעת תור</button>
             )}
-            <button onClick={scrollToContact} className="text-white px-7 py-2.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={{ backgroundColor: siteData.themeColor }}>צור קשר</button>
+            <button onClick={scrollToContact} className="text-white px-4 sm:px-7 py-2.5 rounded-full font-bold text-sm sm:text-base whitespace-nowrap shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all" style={{ backgroundColor: siteData.themeColor }}>צור קשר</button>
           </div>
         </header>
 
         {/* === פאנל צבעים מרחף === */}
-        <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 backdrop-blur-md px-6 py-3.5 rounded-full shadow-2xl border border-gray-100 flex items-center gap-3 transition-all">
-          <span className="text-sm font-bold text-gray-700 ml-2">צבע מותג:</span>
+        <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-50 max-w-[calc(100vw-16px)] bg-white/90 backdrop-blur-md px-3 sm:px-6 py-3 sm:py-3.5 rounded-full shadow-2xl border border-gray-100 flex items-center gap-2 sm:gap-3 transition-all">
+          <span className="hidden sm:inline text-sm font-bold text-gray-700 ml-2">צבע מותג:</span>
           {themeColors.map((color) => (
             <button key={color} onClick={() => updateField('themeColor', color)} className={`w-8 h-8 rounded-full transition-all ${siteData.themeColor === color ? 'ring-4 ring-offset-2 ring-gray-200 scale-110 shadow-md' : 'border border-gray-200 shadow-sm hover:scale-110'}`} style={{ backgroundColor: color }} />
           ))}
         </div>
 
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4">
-          <button onClick={handlePublish} disabled={isSaving} className="bg-gray-900 text-white px-10 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-black hover:shadow-black/20 hover:-translate-y-1 transition-all border border-gray-800 disabled:opacity-60 disabled:cursor-not-allowed">
-            <span className="font-bold text-lg">
-              {isSaving ? 'שומר...' : isPro ? 'שמור את האתר' : 'פרסם את האתר ב-29 ₪ לחודש'}
+          <button onClick={handlePublish} disabled={isSaving} className="bg-gray-900 text-white px-5 sm:px-10 py-3 sm:py-4 rounded-full shadow-2xl flex items-center gap-2 sm:gap-3 whitespace-nowrap hover:bg-black hover:shadow-black/20 hover:-translate-y-1 transition-all border border-gray-800 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span className="font-bold text-base sm:text-lg">
+              {isSaving ? 'שומר...' : isPro ? 'שמור את האתר' : (
+                <>
+                  <span className="sm:hidden">פרסם ב-29 ₪ לחודש</span>
+                  <span className="hidden sm:inline">פרסם את האתר ב-29 ₪ לחודש</span>
+                </>
+              )}
             </span>
             <span className="text-xl">🚀</span>
           </button>

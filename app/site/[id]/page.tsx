@@ -164,7 +164,7 @@ export default function PublicSitePage() {
         <div className="flex items-center gap-2 md:gap-4">
           {siteData.bookingEnabled !== false && (
             <>
-              <button onClick={() => setIsMyAppointmentsOpen(true)} className="text-sm text-gray-600 hover:text-gray-900 font-bold px-2 transition-colors">
+              <button onClick={() => setIsMyAppointmentsOpen(true)} className="text-sm text-gray-600 hover:text-gray-900 font-bold px-3 py-2.5 transition-colors">
                 התורים שלי
               </button>
               <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full font-bold shadow-sm">

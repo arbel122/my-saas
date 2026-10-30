@@ -124,7 +124,7 @@ export default function LoginPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors ml-1"
+              className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors ml-1 py-2 px-1"
             >
               {isLogin ? 'הרשם עכשיו' : 'התחבר כאן'}
             </button>
