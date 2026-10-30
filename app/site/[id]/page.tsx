@@ -14,9 +14,6 @@ export default function PublicSitePage() {
   const [error, setError] = useState(false);
   const [hasIncrementedView, setHasIncrementedView] = useState(false);
   
-  // שומר האם האתר הוא פרו
-  const [isProSite, setIsProSite] = useState(false);
-
   // חלונית קביעת תור
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState('');
@@ -46,7 +43,6 @@ export default function PublicSitePage() {
         
         if (data && data.content) {
           setSiteData(data.content);
-          setIsProSite(data.is_pro || false);
           
           if (!hasIncrementedView) {
             setHasIncrementedView(true);
@@ -289,25 +285,6 @@ export default function PublicSitePage() {
             <a href={siteData.contactPhone ? `https://wa.me/972${siteData.contactPhone.replace(/^0/, '')}` : '#'} target={siteData.contactPhone ? "_blank" : "_self"} className="inline-flex items-center justify-center gap-3 bg-[#25D366] text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-[#1EBE5A] shadow-lg w-full md:w-auto">
               <span>וואטסאפ לבעל העסק</span><span className="text-2xl">💬</span>
             </a>
-            
-            {isProSite ? (
-              <a 
-                href="https://wa.me/972509388865?text=היי ארבל, אני מנוי Pro ואשמח לעזרה טכנית אישית!" 
-                target="_blank" 
-                className="inline-flex items-center justify-center gap-3 bg-purple-600 text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-purple-700 shadow-lg w-full md:w-auto"
-              >
-                <span>תמיכה טכנית VIP (אישית מול ארבל)</span><span className="text-2xl">🛠️</span>
-              </a>
-            ) : (
-              <a 
-                href="https://wa.me/972509388865?text=היי, אשמח לשמוע פרטים נוספים על חבילת ה-Pro של SiteAI" 
-                target="_blank" 
-                className="inline-flex items-center justify-center gap-3 bg-gray-800 text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-gray-900 shadow-lg w-full md:w-auto"
-              >
-                <span>תמיכה כללית / שדרוג ל-Pro</span><span className="text-2xl">💬</span>
-              </a>
-            )}
-
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../utils/supabase'; 
+import { supabase } from '../utils/supabase';
+import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -173,7 +174,16 @@ export default function DashboardPage() {
                   <span>סגור חלון</span>
                   <span>✖</span>
                 </button>
-                <button 
+                <a
+                  href={supportWhatsappUrl(isPro ? 'היי, אני מנוי Pro ואשמח לעזרה עם האתר שלי.' : 'היי, אשמח לשמוע פרטים נוספים על חבילת ה-Pro של SiteAI.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-3 text-right hover:bg-green-50 text-green-700 border-b transition font-medium flex justify-between items-center"
+                >
+                  <span>תמיכה בוואטסאפ</span>
+                  <span>💬</span>
+                </a>
+                <button
                   className="px-4 py-3 text-right hover:bg-red-50 text-red-600 transition font-medium flex justify-between items-center"
                   onClick={handleLogout}
                 >
