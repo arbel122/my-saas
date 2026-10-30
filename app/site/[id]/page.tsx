@@ -6,6 +6,8 @@ import { supabase } from '@/app/utils/supabase';
 import ReviewsSection from '../../components/ReviewsSection';
 import BookingModal from '../../components/BookingModal';
 import CatalogSection from '../../components/CatalogSection';
+import MyAppointmentsModal from '../../components/MyAppointmentsModal';
+import { rememberAppointment } from '../../utils/my-appointments';
 
 export default function PublicSitePage() {
   const params = useParams(); 
@@ -24,11 +26,7 @@ export default function PublicSitePage() {
   // שומר את פרטי התור שנקבע בהצלחה עבור הודעת האישור והדירוג
 
   // חלונית ביטול תור
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelToken, setCancelToken] = useState<string | null>(null);
-  const [cancelData, setCancelData] = useState<any>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelMessage, setCancelMessage] = useState('');
+  const [isMyAppointmentsOpen, setIsMyAppointmentsOpen] = useState(false);
 
   // טעינת האתר ובדיקה אם הלקוח הגיע מלינק ביטול
   useEffect(() => {
@@ -84,42 +82,12 @@ export default function PublicSitePage() {
 
     const searchParams = new URLSearchParams(window.location.search);
     const cancelId = searchParams.get('cancel');
-    if (cancelId) {
-      setCancelToken(cancelId);
-      setIsCancelModalOpen(true);
-      fetchAppointmentForCancel(cancelId);
+    if (cancelId && /^[0-9a-f-]{36}$/i.test(cancelId)) {
+      // קישור אישי (גם ממכשיר אחר): שומרים את התור במכשיר הזה ופותחים את "התורים שלי"
+      rememberAppointment(params.id as string, { token: cancelId, service: '', date: '', time: '' });
+      setIsMyAppointmentsOpen(true);
     }
-  }, [params, hasIncrementedView]);
-
-  const fetchAppointmentForCancel = async (token: string) => {
-    try {
-      const res = await fetch(`/api/appointments/${encodeURIComponent(token)}`);
-      if (!res.ok) {
-        setCancelMessage('לא מצאנו את התור. ייתכן שהוא כבר בוטל.');
-        return;
-      }
-      const data = await res.json();
-      setCancelData({ customer_name: data.customerName, date: data.date });
-    } catch {
-      setCancelMessage('שגיאה בטעינת נתוני התור.');
-    }
-  };
-
-  const handleCancelAppointment = async () => {
-    if (!cancelData || !cancelToken) return;
-    setIsCancelling(true);
-    try {
-      const res = await fetch(`/api/appointments/${encodeURIComponent(cancelToken)}`, { method: 'DELETE' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'שגיאה בביטול התור');
-      setCancelMessage('התור בוטל בהצלחה! השעה התפנתה ביומן.');
-      setCancelData(null);
-    } catch (err) {
-      setCancelMessage(err instanceof Error ? err.message : 'שגיאה בביטול התור');
-    } finally {
-      setIsCancelling(false);
-    }
-  };
+}, [params, hasIncrementedView]);
 
   const scrollToContact = () => {
     document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -165,52 +133,17 @@ export default function PublicSitePage() {
         </div>
       )}
       
-      {/* -------------------- מודל ביטול תור -------------------- */}
-      {isCancelModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCancelModalOpen(false)}></div>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 relative z-10 text-center animate-in fade-in zoom-in-95">
-            <button onClick={() => setIsCancelModalOpen(false)} className="absolute top-4 right-4 bg-gray-100 text-gray-600 hover:bg-gray-200 w-10 h-10 rounded-full text-xl">✖</button>
-            
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">📅</div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">ניהול תור</h2>
-            
-            {!cancelToken && !cancelMessage ? (
-               <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                 <p className="font-bold text-blue-800 mb-2 text-lg">איך מבטלים או מנהלים תור?</p>
-                 <p className="text-sm text-blue-700 leading-relaxed">
-                   הקישור לניהול וביטול התור נמצא <strong>בהודעת הוואטסאפ</strong> שקיבלתם כשקבעתם את התור. <br/><br/>
-                   אנא חזרו לוואטסאפ ולחצו על הקישור האישי שלכם.
-                 </p>
-               </div>
-            ) : cancelMessage ? (
-              <div className="mt-6 p-4 bg-blue-50 text-blue-800 rounded-xl font-medium">{cancelMessage}</div>
-            ) : cancelData ? (
-              <div className="mt-6">
-                <div className="bg-gray-50 p-4 rounded-xl text-right mb-6 border border-gray-100">
-                  <p className="text-gray-500 text-sm mb-1">שם הלקוח</p>
-                  <p className="font-bold text-gray-800 mb-3">{cancelData.customer_name}</p>
-                  <p className="text-gray-500 text-sm mb-1">מועד התור</p>
-                  <p className="font-bold text-blue-600 bg-blue-50 inline-block px-2 py-1 rounded">{cancelData.date}</p>
-                </div>
-                <button 
-                  onClick={handleCancelAppointment} disabled={isCancelling}
-                  className="w-full py-3 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white font-bold rounded-xl transition-colors disabled:opacity-50"
-                >
-                  {isCancelling ? 'מבטל...' : 'בטל את התור הזה'}
-                </button>
-              </div>
-            ) : (
-              <div className="mt-6">
-                <div className="w-8 h-8 border-4 border-gray-300 border-t-red-500 rounded-full animate-spin mx-auto"></div>
-                <p className="text-gray-500 mt-4">טוען פרטי תור...</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {isMyAppointmentsOpen && siteData.bookingEnabled !== false && (
+        <MyAppointmentsModal
+          siteId={params?.id as string}
+          businessName={siteData.businessName}
+          contactPhone={siteData.contactPhone}
+          themeColor={siteData.themeColor}
+          onClose={() => setIsMyAppointmentsOpen(false)}
+        />
       )}
 
-      {isBookingModalOpen && siteData.bookingEnabled !== false && (
+{isBookingModalOpen && siteData.bookingEnabled !== false && (
         <BookingModal
           siteId={params?.id as string}
           businessName={siteData.businessName}
@@ -231,8 +164,8 @@ export default function PublicSitePage() {
         <div className="flex items-center gap-2 md:gap-4">
           {siteData.bookingEnabled !== false && (
             <>
-              <button onClick={() => setIsCancelModalOpen(true)} className="hidden md:block text-sm text-gray-500 hover:text-red-500 font-medium ml-4 transition-colors">
-                ביטול תור
+              <button onClick={() => setIsMyAppointmentsOpen(true)} className="text-sm text-gray-600 hover:text-gray-900 font-bold px-2 transition-colors">
+                התורים שלי
               </button>
               <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full font-bold shadow-sm">
                 קביעת תור
@@ -301,6 +234,19 @@ export default function PublicSitePage() {
         phone={siteData.contactPhone}
         businessName={siteData.businessName}
       />
+
+      {siteData.bookingEnabled !== false && (
+        <div className="py-10 px-4 text-center bg-white border-t border-gray-100">
+          <p className="text-gray-600 mb-3">כבר קבעתם תור אצלנו? אפשר לבטל לפני התור, ולכתוב ביקורת אחריו.</p>
+          <button
+            onClick={() => setIsMyAppointmentsOpen(true)}
+            className="px-8 py-3 rounded-full font-bold text-white shadow-md hover:opacity-90"
+            style={{ backgroundColor: siteData.themeColor || '#2563eb' }}
+          >
+            התורים שלי: ביטול וביקורת
+          </button>
+        </div>
+      )}
 
       {/* -------------------- אזור הצגת ביקורות -------------------- */}
       {params?.id && <ReviewsSection siteId={params.id as string} />}

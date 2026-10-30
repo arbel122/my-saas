@@ -41,8 +41,9 @@ export async function GET(req: Request, { params }: Ctx) {
     date: appointment.date,
     siteName: site?.name ?? null,
     reviewed: !!review && review.length > 0,
-    // ביקורת אפשרית רק אחרי שהתור התקיים
+    // ביקורת אפשרית רק אחרי שהתור התקיים, וביטול רק לפניו
     canReview: hasStarted(appointment.starts_at),
+    canCancel: !hasStarted(appointment.starts_at),
   });
 }
 
@@ -60,6 +61,9 @@ export async function DELETE(req: Request, { params }: Ctx) {
 
   // תור שנכתבה עליו ביקורת כבר התקיים, ולכן אי אפשר לבטל אותו (וגם המסד חוסם מחיקה כזו).
   const appointment = await findByToken(token);
+  if (appointment && hasStarted(appointment.starts_at)) {
+    return NextResponse.json({ error: 'אי אפשר לבטל תור שכבר התקיים.' }, { status: 409 });
+  }
   if (appointment) {
     const { data: review } = await supabase
       .from('reviews')

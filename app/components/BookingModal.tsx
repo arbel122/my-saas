@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { israelNow } from '@/app/utils/schedule';
+import { rememberAppointment } from '@/app/utils/my-appointments';
 
 type Service = { name: string; duration?: string; price?: string };
 
@@ -104,6 +105,8 @@ export default function BookingModal({
         return;
       }
       setBooked({ token: data.token, service, date, time, name: name.trim(), phone: phone.trim() });
+      // זוכרים את התור במכשיר, כדי שהלקוח יוכל לחזור לבטל או לכתוב ביקורת
+      rememberAppointment(siteId, { token: data.token, service, date, time });
     } catch {
       setError('שגיאה בקביעת התור. בדקו את החיבור ונסו שוב.');
     } finally {
@@ -163,19 +166,11 @@ export default function BookingModal({
             )}
 
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600 space-y-2 text-right">
-              <p className="font-bold text-gray-800">צריכים לבטל או לשנות?</p>
-              <p>שמרו את הקישור האישי הזה. רק מי שמחזיק בו יכול לבטל את התור:</p>
-              <a href={`/site/${siteId}?cancel=${booked.token}`} className="block break-all text-blue-600 underline" dir="ltr">{cancelUrl}</a>
+              <p className="font-bold text-gray-800">צריכים לבטל? ורוצים לכתוב ביקורת אחרי התור?</p>
+              <p>הכול נמצא בכפתור <strong>&quot;התורים שלי&quot;</strong> בראש האתר: ביטול עד שהתור מתחיל, וביקורת אחרי שהוא התקיים. התור נשמר לכם במכשיר הזה.</p>
+              <p className="text-xs text-gray-500">רוצים לגשת ממכשיר אחר? שמרו את הקישור האישי:</p>
+              <a href={`/site/${siteId}?cancel=${booked.token}`} className="block break-all text-blue-600 underline text-xs" dir="ltr">{cancelUrl}</a>
             </div>
-
-            <a
-              href={`/review/${booked.token}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block text-sm text-blue-700 underline"
-            >
-              ⭐ אחרי התור: השאירו חוות דעת
-            </a>
             <div>
               <button onClick={onClose} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-6 py-2.5 rounded-full text-sm transition-colors">סגור</button>
             </div>
