@@ -8,6 +8,7 @@ type AppointmentInfo = {
   date: string;
   siteName: string | null;
   reviewed: boolean;
+  canReview: boolean;
 };
 
 export default function ReviewPage() {
@@ -91,6 +92,20 @@ export default function ReviewPage() {
           >
             חזרה לדף הבית
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!appointment.canReview && !isSubmitted && !appointment.reviewed) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-xl border border-gray-100 text-center">
+          <div className="text-6xl mb-4">⏳</div>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">עוד לא הגיע הזמן לביקורת</h1>
+          <p className="text-gray-600 mb-2">אפשר להשאיר ביקורת אחרי שהתור מתקיים.</p>
+          <p className="text-gray-800 font-bold mb-6">התור שלכם: {appointment.date}</p>
+          <p className="text-sm text-gray-500">שמרו את הקישור הזה וחזרו אליו אחרי התור.</p>
         </div>
       </div>
     );

@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../utils/supabase";
 
 interface Review {
   id: string;
-  client_name: string;
+  name: string;
   rating: number;
   comment: string | null;
-  photo_url: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 export default function ReviewsSection({ siteId }: { siteId: string }) {
@@ -18,14 +16,14 @@ export default function ReviewsSection({ siteId }: { siteId: string }) {
 
   useEffect(() => {
     async function fetchReviews() {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("site_id", siteId)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        setReviews(data);
+      try {
+        const res = await fetch(`/api/sites/${encodeURIComponent(siteId)}/reviews`);
+        if (res.ok) {
+          const data = await res.json();
+          setReviews(data.reviews ?? []);
+        }
+      } catch {
+        // אם הטעינה נכשלה פשוט לא מציגים את האזור
       }
       setLoading(false);
     }
@@ -47,10 +45,10 @@ export default function ReviewsSection({ siteId }: { siteId: string }) {
           <h2 className="text-3xl font-black text-slate-900 mb-2">מה הלקוחות שלנו אומרים</h2>
           <div className="flex items-center justify-center gap-2">
             <span className="text-2xl font-bold text-slate-800">{averageRating}</span>
-            <div className="flex text-amber-400 text-xl">
+            <div className="flex text-amber-400 text-xl" aria-label={`דירוג ממוצע ${averageRating} מתוך 5`}>
               {"★".repeat(Math.round(Number(averageRating)))}
             </div>
-            <span className="text-sm text-slate-500">({reviews.length} ביקורות מאומתות)</span>
+            <span className="text-sm text-slate-500">({reviews.length} ביקורות)</span>
           </div>
         </div>
 
@@ -63,32 +61,22 @@ export default function ReviewsSection({ siteId }: { siteId: string }) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="font-bold text-slate-900">{review.client_name}</h4>
+                    <h4 className="font-bold text-slate-900">{review.name}</h4>
                     <span className="inline-block bg-emerald-50 text-emerald-700 text-xs px-2.5 py-0.5 rounded-full font-semibold mt-1">
-                      ✓ תור מאומת
+                      ✓ לקוח שקבע תור
                     </span>
                   </div>
-                  <div className="flex text-amber-400 text-lg">
+                  <div className="flex text-amber-400 text-lg" aria-label={`${review.rating} כוכבים`}>
                     {"★".repeat(review.rating)}
                   </div>
                 </div>
 
                 {review.comment && (
                   <p className="text-slate-600 text-sm leading-relaxed mb-3">
-                    "{review.comment}"
+                    &quot;{review.comment}&quot;
                   </p>
                 )}
               </div>
-
-              {review.photo_url && (
-                <div className="mt-2 overflow-hidden rounded-2xl border border-slate-100 max-h-48">
-                  <img
-                    src={review.photo_url}
-                    alt="תמונת ביקורת"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
             </div>
           ))}
         </div>

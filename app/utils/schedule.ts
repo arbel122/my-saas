@@ -101,6 +101,13 @@ export function israelNow(): { date: string; minutes: number } {
   return { date: `${get('year')}-${get('month')}-${get('day')}`, minutes: Number(get('hour')) * 60 + Number(get('minute')) };
 }
 
+// האם התור כבר התחיל (שעון ישראל). תורים ישנים בלי שעת התחלה נחשבים כמי שהתקיימו.
+export function hasStarted(startsAt?: string | null): boolean {
+  if (!startsAt) return true;
+  const now = israelNow();
+  return startsAt.slice(0, 19) <= `${now.date}T${toTime(now.minutes)}:00`;
+}
+
 // כל שעות ההתחלה האפשריות ביום נתון לפי השעות והחריגות, לפני בדיקת תורים תפוסים.
 export function generateSlots(content: unknown, date: string, durationMin: number): string[] {
   const schedule = getSchedule(content);

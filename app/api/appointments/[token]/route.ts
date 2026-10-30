@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
+import { hasStarted } from '@/app/utils/schedule';
 
 type Ctx = { params: Promise<{ token: string }> };
 
 async function findByToken(token: string) {
   const { data } = await getSupabaseAdmin()
     .from('appointments')
-    .select('id, site_id, customer_name, date')
+    .select('id, site_id, customer_name, date, starts_at')
     .eq('token', token)
     .maybeSingle();
   return data;
@@ -40,6 +41,8 @@ export async function GET(req: Request, { params }: Ctx) {
     date: appointment.date,
     siteName: site?.name ?? null,
     reviewed: !!review && review.length > 0,
+    // ביקורת אפשרית רק אחרי שהתור התקיים
+    canReview: hasStarted(appointment.starts_at),
   });
 }
 

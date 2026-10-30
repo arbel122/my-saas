@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
+import { hasStarted } from '@/app/utils/schedule';
 
 // ביקורת אחת לכל תור, רק למי שמחזיק במזהה האקראי של התור.
 export async function POST(req: Request) {
@@ -24,11 +25,14 @@ export async function POST(req: Request) {
 
     const { data: appointment } = await supabase
       .from('appointments')
-      .select('id, site_id, customer_name')
+      .select('id, site_id, customer_name, starts_at')
       .eq('token', token)
       .maybeSingle();
     if (!appointment) {
       return NextResponse.json({ error: 'התור לא נמצא' }, { status: 404 });
+    }
+    if (!hasStarted(appointment.starts_at)) {
+      return NextResponse.json({ error: 'אפשר להשאיר ביקורת רק אחרי שהתור התקיים.' }, { status: 403 });
     }
 
     const { data: existing } = await supabase
