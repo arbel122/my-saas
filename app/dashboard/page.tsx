@@ -15,17 +15,17 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkStripeSuccessAndFetch = async () => {
+    const cleanPaymentParamAndFetch = async () => {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('success') === 'true') {
-        // מנקים את הפרמטר מהכתובת בלבד ללא עדכון הרשאות בצד לקוח
+      if (params.get('status') === 'success') {
+        // מנקים את הפרמטר מהכתובת בלבד. הרשאות Pro נקבעות בשרת.
         window.history.replaceState(null, '', '/dashboard');
       }
-      
+
       fetchSitesAndAppointments();
     };
 
-    checkStripeSuccessAndFetch();
+    cleanPaymentParamAndFetch();
   }, []);
 
   const fetchSitesAndAppointments = async () => {
