@@ -8,14 +8,47 @@ function cleanJsonResponse(rawText: string) {
   return cleaned.trim();
 }
 
+// הגבלת בקשות לפי IP. נשמר בזיכרון, כך שזו הגנה בסיסית נגד ניצול לרעה ולא חסימה מלאה.
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const MAX_DESCRIPTION_LENGTH = 2000;
+const requestLog = new Map<string, number[]>();
+
+function isRateLimited(ip: string) {
+  const now = Date.now();
+  const recent = (requestLog.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    requestLog.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  requestLog.set(ip, recent);
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json(
+        { error: "יותר מדי ניסיונות. נסה שוב בעוד כמה דקות." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { businessDescription } = body;
 
-    if (!businessDescription) {
+    if (!businessDescription || typeof businessDescription !== "string") {
       return NextResponse.json(
         { error: "נא לספק תיאור עסק." },
+        { status: 400 }
+      );
+    }
+
+    if (businessDescription.length > MAX_DESCRIPTION_LENGTH) {
+      return NextResponse.json(
+        { error: "התיאור ארוך מדי." },
         { status: 400 }
       );
     }

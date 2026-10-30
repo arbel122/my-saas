@@ -7,24 +7,9 @@ export default function PricingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // הפונקציה שמתחברת לשרת כדי לפתוח את חלון התשלום של Stripe
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     setIsLoading(true);
-    try {
-      const res = await fetch('/api/checkout', { method: 'POST' });
-      const data = await res.json();
-      
-      if (data.url) {
-        // אם קיבלנו לינק מסטריפ - מעבירים את הלקוח אליו!
-        window.location.href = data.url;
-      } else {
-        alert('שגיאה ביצירת חלון תשלום.');
-        setIsLoading(false);
-      }
-    } catch (error) {
-      alert('קרתה תקלה מול השרת.');
-      setIsLoading(false);
-    }
+    router.push('/checkout');
   };
 
   return (

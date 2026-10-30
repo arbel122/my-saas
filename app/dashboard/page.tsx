@@ -38,7 +38,12 @@ export default function DashboardPage() {
       }
 
       setUserEmail(user.email || 'User');
-      setIsPro(user.user_metadata?.is_pro === true);
+      const { data: proRow } = await supabase
+        .from('pro_users')
+        .select('is_active')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setIsPro(proRow?.is_active === true);
 
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
