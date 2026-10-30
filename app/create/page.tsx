@@ -643,7 +643,7 @@ export default function CreatePage() {
                   <div className="flex flex-col gap-5">
                     <input type="text" placeholder="שם מלא" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white transition-all" required />
                     <input type="tel" placeholder="מספר נייד" className="w-full p-4 rounded-2xl border-2 border-gray-100 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white text-right transition-all" dir="rtl" required />
-                    <button className="w-full py-5 mt-2 rounded-2xl font-bold text-white shadow-xl text-lg hover:-translate-y-1 hover:shadow-2xl transition-all" style={{ backgroundColor: siteData.themeColor }} onClick={() => { if (!selectedService) { alert('אנא בחרו שירות.'); return; } alert('התור נרשם!'); setIsBookingModalOpen(false); }}>
+                    <button className="w-full py-5 mt-2 rounded-2xl font-bold text-white shadow-xl text-lg hover:-translate-y-1 hover:shadow-2xl transition-all" style={{ backgroundColor: siteData.themeColor }} onClick={() => { if (!selectedService) { alert('אנא בחרו שירות.'); return; } alert('זו תצוגה מקדימה בלבד, ותור לא נשמר כאן. תורים אמיתיים נקבעים באתר המפורסם שלך (הכפתור "צפה באתר" בדשבורד).'); setIsBookingModalOpen(false); }}>
                       שריין לי את התור
                     </button>
                   </div>
