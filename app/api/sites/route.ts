@@ -42,6 +42,15 @@ export async function POST(req: Request) {
     const isPro = proRow?.is_active === true && (!proRow.ends_at || new Date(proRow.ends_at).getTime() > Date.now());
 
     if (id) {
+      // רשימת הביקורות המוסתרות מנוהלת רק בשרת. שמירה מהעורך לא דורסת אותה.
+      const { data: existing } = await supabase
+        .from('sites')
+        .select('content')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      content.hiddenReviewIds = Array.isArray(existing?.content?.hiddenReviewIds) ? existing.content.hiddenReviewIds : [];
+
       const { data, error } = await supabase
         .from('sites')
         .update({ name: siteName, content, is_pro: isPro })
@@ -55,6 +64,8 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ id: data[0].id });
     }
+
+    content.hiddenReviewIds = [];
 
     const { count } = await supabase
       .from('sites')

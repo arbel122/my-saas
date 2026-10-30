@@ -21,10 +21,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: site } = await supabase.from('sites').select('is_pro').eq('id', id).maybeSingle();
+  const { data: site } = await supabase.from('sites').select('is_pro, content').eq('id', id).maybeSingle();
   if (!site || site.is_pro !== true) {
     return NextResponse.json({ reviews: [] });
   }
+
+  // ביקורות שבעל העסק הסתיר לא מוצגות לגולשים
+  const hidden = new Set<string>(
+    Array.isArray(site.content?.hiddenReviewIds) ? site.content.hiddenReviewIds.map(String) : []
+  );
 
   const { data } = await supabase
     .from('reviews')
@@ -34,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     .limit(50);
 
   return NextResponse.json({
-    reviews: (data ?? []).map((r) => ({
+    reviews: (data ?? []).filter((r) => !hidden.has(String(r.id))).map((r) => ({
       id: r.id,
       name: publicName(r.client_name),
       rating: r.rating,

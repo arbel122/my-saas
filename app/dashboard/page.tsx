@@ -17,6 +17,17 @@ export default function DashboardPage() {
   const [showSubscription, setShowSubscription] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
+  type ManagedReview = {
+    id: string;
+    siteName: string;
+    name: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    appointmentDate: string | null;
+    hidden: boolean;
+  };
+  const [reviews, setReviews] = useState<ManagedReview[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -65,6 +76,7 @@ export default function DashboardPage() {
       if (sitesError) throw sitesError;
       const userSites = sitesData || [];
       setSites(userSites);
+      fetchReviews();
 
       if (userSites.length > 0) {
         const siteIds = userSites.map((s: any) => s.id);
@@ -124,6 +136,31 @@ export default function DashboardPage() {
     
     localStorage.setItem('generatedSite', JSON.stringify(siteToEdit));
     router.push('/create');
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const res = await fetch('/api/reviews/manage', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (res.ok) setReviews((await res.json()).reviews ?? []);
+    } catch {
+      // לא מציגים את אזור הביקורות אם הטעינה נכשלה
+    }
+  };
+
+  const toggleReviewHidden = async (review: ManagedReview) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch('/api/reviews/manage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ reviewId: review.id, hidden: !review.hidden }),
+    });
+    if (res.ok) {
+      setReviews((prev) => prev.map((r) => (r.id === review.id ? { ...r, hidden: !r.hidden } : r)));
+    } else {
+      alert('שגיאה בעדכון הביקורת. נסו שוב.');
+    }
   };
 
   const handleCancelSubscription = async () => {
@@ -341,6 +378,44 @@ export default function DashboardPage() {
             </div>
           )}
         </section>
+
+        {/* --- אזור ביקורות --- */}
+        {reviews.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">ביקורות ⭐</h2>
+                <p className="text-gray-500 text-sm mt-1">אפשר להסתיר ביקורת מזויפת או פוגענית. ביקורת מוסתרת לא מוצגת בכלל באתר.</p>
+              </div>
+              <span className="bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full font-bold text-sm border border-amber-100">
+                סה&quot;כ: {reviews.length}
+              </span>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {reviews.map((review) => (
+                <div key={review.id} className={`bg-white rounded-2xl border p-5 shadow-sm flex flex-col gap-3 ${review.hidden ? 'border-gray-200 opacity-60' : 'border-gray-100'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-gray-900">{review.name}</p>
+                      <p className="text-xs text-gray-400">{review.siteName}{review.appointmentDate ? ` · ${review.appointmentDate}` : ''}</p>
+                    </div>
+                    <span className="text-amber-400 text-lg whitespace-nowrap" aria-label={`${review.rating} כוכבים`}>{'★'.repeat(review.rating)}</span>
+                  </div>
+                  {review.comment && <p className="text-gray-700 text-sm">&quot;{review.comment}&quot;</p>}
+                  <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+                    <span className={`text-xs font-bold ${review.hidden ? 'text-gray-500' : 'text-green-600'}`}>{review.hidden ? 'מוסתרת מהאתר' : 'מוצגת באתר'}</span>
+                    <button
+                      onClick={() => toggleReviewHidden(review)}
+                      className={`text-sm font-bold px-4 py-1.5 rounded-full transition-colors ${review.hidden ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                    >
+                      {review.hidden ? 'הצג שוב' : 'הסתר'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* --- אזור ניהול האתרים --- */}
         <header className="mb-8">
