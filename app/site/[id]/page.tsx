@@ -29,7 +29,7 @@ export default function PublicSitePage() {
 
   // חלונית ביטול תור
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancelAppointmentId, setCancelAppointmentId] = useState<number | null>(null);
+  const [cancelToken, setCancelToken] = useState<string | null>(null);
   const [cancelData, setCancelData] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState('');
@@ -55,9 +55,17 @@ export default function PublicSitePage() {
           setIsProSite(data.is_pro || false);
           
           if (!hasIncrementedView) {
-            const currentViews = data.views || 0;
-            await supabase.from('sites').update({ views: currentViews + 1 }).eq('id', params.id as string);
             setHasIncrementedView(true);
+            try {
+              // מונים צפייה אחת לכל גולש בסשן. הספירה עצמה נעשית בשרת.
+              const viewedKey = `viewed:${params.id}`;
+              if (!sessionStorage.getItem(viewedKey)) {
+                sessionStorage.setItem(viewedKey, '1');
+                fetch(`/api/sites/${params.id}/view`, { method: 'POST' }).catch(() => {});
+              }
+            } catch {
+              // sessionStorage לא זמין (למשל גלישה פרטית חסומה). מדלגים על הספירה.
+            }
           }
         } else {
           setError(true);
@@ -75,35 +83,37 @@ export default function PublicSitePage() {
     const searchParams = new URLSearchParams(window.location.search);
     const cancelId = searchParams.get('cancel');
     if (cancelId) {
-      setCancelAppointmentId(Number(cancelId));
+      setCancelToken(cancelId);
       setIsCancelModalOpen(true);
-      fetchAppointmentForCancel(Number(cancelId));
+      fetchAppointmentForCancel(cancelId);
     }
   }, [params, hasIncrementedView]);
 
-  const fetchAppointmentForCancel = async (id: number) => {
+  const fetchAppointmentForCancel = async (token: string) => {
     try {
-      const { data, error } = await supabase.from('appointments').select('*').eq('id', id).single();
-      if (error || !data) {
+      const res = await fetch(`/api/appointments/${encodeURIComponent(token)}`);
+      if (!res.ok) {
         setCancelMessage('לא מצאנו את התור. ייתכן שהוא כבר בוטל.');
-      } else {
-        setCancelData(data);
+        return;
       }
-    } catch (err) {
+      const data = await res.json();
+      setCancelData({ customer_name: data.customerName, date: data.date });
+    } catch {
       setCancelMessage('שגיאה בטעינת נתוני התור.');
     }
   };
 
   const handleCancelAppointment = async () => {
-    if (!cancelData) return;
+    if (!cancelData || !cancelToken) return;
     setIsCancelling(true);
     try {
-      const { error } = await supabase.from('appointments').delete().eq('id', cancelData.id);
-      if (error) throw error;
+      const res = await fetch(`/api/appointments/${encodeURIComponent(cancelToken)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'שגיאה בביטול התור');
       setCancelMessage('התור בוטל בהצלחה! השעה התפנתה ביומן.');
-      setCancelData(null); 
-    } catch (err: any) {
-      setCancelMessage('שגיאה בביטול התור: ' + err.message);
+      setCancelData(null);
+    } catch (err) {
+      setCancelMessage(err instanceof Error ? err.message : 'שגיאה בביטול התור');
     } finally {
       setIsCancelling(false);
     }
@@ -134,42 +144,35 @@ export default function PublicSitePage() {
 
     setIsSubmitting(true);
     try {
-      const exactDateString = `${appointmentDate} בשעה ${appointmentTime} (${selectedService})`;
+      // הבדיקה שהשעה פנויה והשריון נעשים בשרת, בפעולה אחת
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: params?.id,
+          service: selectedService,
+          date: appointmentDate,
+          time: appointmentTime,
+          customerName,
+          customerPhone,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-      const { data: existingAppts, error: checkError } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('site_id', params?.id)
-        .eq('date', exactDateString);
-
-      if (checkError) throw checkError;
-      if (existingAppts && existingAppts.length > 0) {
-        alert('אופס! התאריך והשעה האלו כבר תפוסים. אנא בחרו שעה אחרת.');
-        setIsSubmitting(false);
+      if (!res.ok) {
+        alert(data.error || 'שגיאה בקביעת התור. נסו שוב.');
         return;
       }
 
-      const { data: newAppointment, error: insertError } = await supabase
-        .from('appointments')
-        .insert([{ site_id: params?.id, customer_name: customerName, customer_phone: customerPhone, date: exactDateString }])
-        .select();
+      setBookedAppointment({ id: data.id, token: data.token });
 
-      if (insertError) {
-        alert('שגיאה מ-Supabase: ' + insertError.message);
-        setIsSubmitting(false);
-        return;
-      }
-
-      const createdAppointment = newAppointment[0];
-      setBookedAppointment(createdAppointment);
-
-      // שמירת הפרטים וניקוי הטופס
-      setCustomerName(''); 
-      setCustomerPhone(''); 
-      setAppointmentDate(''); 
+      // ניקוי הטופס
+      setCustomerName('');
+      setCustomerPhone('');
+      setAppointmentDate('');
       setAppointmentTime('');
-    } catch (err: any) {
-      alert('שגיאה כללית: ' + err.message);
+    } catch {
+      alert('שגיאה בקביעת התור. בדקו את החיבור לאינטרנט ונסו שוב.');
     } finally {
       setIsSubmitting(false);
     }
@@ -204,7 +207,7 @@ export default function PublicSitePage() {
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">📅</div>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">ניהול תור</h2>
             
-            {!cancelAppointmentId && !cancelMessage ? (
+            {!cancelToken && !cancelMessage ? (
                <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
                  <p className="font-bold text-blue-800 mb-2 text-lg">איך מבטלים או מנהלים תור?</p>
                  <p className="text-sm text-blue-700 leading-relaxed">
@@ -255,12 +258,24 @@ export default function PublicSitePage() {
                   תודה שקבעת תור! התור שלך נשמר במערכת.
                 </p>
 
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600 space-y-2">
+                  <p className="font-bold text-gray-800">צריכים לבטל את התור?</p>
+                  <p>שמרו את הקישור האישי הזה. רק מי שמחזיק בו יכול לבטל את התור:</p>
+                  <a
+                    href={`/site/${params?.id}?cancel=${bookedAppointment.token}`}
+                    className="block break-all text-blue-600 underline"
+                    dir="ltr"
+                  >
+                    {typeof window !== 'undefined' ? `${window.location.origin}/site/${params?.id}?cancel=${bookedAppointment.token}` : ''}
+                  </a>
+                </div>
+
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-4">
                   <p className="text-sm font-bold text-emerald-800">
                     נשמח לשמוע איך היתה החוויה שלך! תוכל לדרג ולהעלות תמונה:
                   </p>
                   <a
-                    href={`/review/${bookedAppointment.id}`}
+                    href={`/review/${bookedAppointment.token}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"

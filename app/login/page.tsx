@@ -24,7 +24,10 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push('/dashboard');
+
+        // חזרה לדף שממנו הגיעו (רק נתיב פנימי באתר, למניעת הפניה לאתר זר)
+        const next = new URLSearchParams(window.location.search).get('next');
+        router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -37,8 +40,8 @@ export default function LoginPage() {
         
         setIsLogin(true);
       }
-    } catch (err: any) {
-      setError(err.message || 'אירעה שגיאה. אנא נסה שוב.');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : 'אירעה שגיאה. אנא נסה שוב.');
     } finally {
       setLoading(false);
     }

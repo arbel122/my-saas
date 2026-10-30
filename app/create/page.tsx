@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadSiteAsset } from '@/app/utils/upload';
+import { supabase } from '@/app/utils/supabase';
 
 export default function CreatePage() {
   const [formData, setFormData] = useState({
@@ -51,6 +52,20 @@ export default function CreatePage() {
   });
 
   const router = useRouter();
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+
+  // משתמש Pro לא צריך לשלם שוב, ולכן הכפתור שלו רק שומר.
+  useEffect(() => {
+    async function loadProStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from('pro_users').select('is_active').eq('user_id', user.id).maybeSingle();
+      setIsPro(data?.is_active === true);
+    }
+    loadProStatus();
+  }, []);
 
   const themeColors = [
     '#2563eb', '#16a34a', '#dc2626', '#ca8a04',
@@ -306,6 +321,37 @@ export default function CreatePage() {
   const handleFormSubmit = (e: any) => { e.preventDefault(); alert('במערכת האמיתית, הפרטים יישלחו כעת ישירות לבעל העסק!'); };
 
   const resetAndGoHome = () => { localStorage.removeItem('generatedSite'); setSiteData(null); setShowSettings(false); };
+
+  // שומר את האתר בשרת (חובה להתחבר), ורק אז ממשיך לתשלום או לדשבורד.
+  const handlePublish = async () => {
+    setIsSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login?next=/create');
+        return;
+      }
+
+      const { id, ...content } = siteData;
+      const res = await fetch('/api/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ id, name: siteData.businessName, content }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'שגיאה בשמירת האתר');
+
+      const saved = { ...siteData, id: data.id };
+      setSiteData(saved);
+      localStorage.setItem('generatedSite', JSON.stringify(saved));
+
+      router.push(isPro ? '/dashboard' : '/checkout');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'שגיאה בשמירת האתר');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const getWhatsappLink = () => {
     if (!siteData.contactPhone) return "#";
@@ -646,8 +692,10 @@ export default function CreatePage() {
         </div>
 
         <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4">
-          <button onClick={() => router.push('/checkout')} className="bg-gray-900 text-white px-10 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-black hover:shadow-black/20 hover:-translate-y-1 transition-all border border-gray-800">
-            <span className="font-bold text-lg">פרסם את האתר ב-29 ₪ לחודש</span>
+          <button onClick={handlePublish} disabled={isSaving} className="bg-gray-900 text-white px-10 py-4 rounded-full shadow-2xl flex items-center gap-3 hover:bg-black hover:shadow-black/20 hover:-translate-y-1 transition-all border border-gray-800 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span className="font-bold text-lg">
+              {isSaving ? 'שומר...' : isPro ? 'שמור את האתר' : 'פרסם את האתר ב-29 ₪ לחודש'}
+            </span>
             <span className="text-xl">🚀</span>
           </button>
         </div>

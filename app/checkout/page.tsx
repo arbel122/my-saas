@@ -15,7 +15,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        router.push("/login");
+        router.push("/login?next=/checkout");
         return;
       }
       setUserId(user.id);

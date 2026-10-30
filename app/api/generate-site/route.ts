@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getClientIp, isRateLimited } from "@/app/utils/rate-limit";
 
 function cleanJsonResponse(rawText: string) {
   let cleaned = rawText.trim();
@@ -8,28 +9,13 @@ function cleanJsonResponse(rawText: string) {
   return cleaned.trim();
 }
 
-// הגבלת בקשות לפי IP. נשמר בזיכרון, כך שזו הגנה בסיסית נגד ניצול לרעה ולא חסימה מלאה.
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_DESCRIPTION_LENGTH = 2000;
-const requestLog = new Map<string, number[]>();
-
-function isRateLimited(ip: string) {
-  const now = Date.now();
-  const recent = (requestLog.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    requestLog.set(ip, recent);
-    return true;
-  }
-  recent.push(now);
-  requestLog.set(ip, recent);
-  return false;
-}
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-    if (isRateLimited(ip)) {
+    if (isRateLimited(`generate:${getClientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS)) {
       return NextResponse.json(
         { error: "יותר מדי ניסיונות. נסה שוב בעוד כמה דקות." },
         { status: 429 }
