@@ -9,6 +9,10 @@ export type PayPalSubscription = {
   status: string;
   plan_id: string;
   custom_id?: string;
+  billing_info?: {
+    next_billing_time?: string;
+    last_payment?: { time?: string };
+  };
 };
 
 async function getAccessToken(): Promise<string> {
@@ -39,6 +43,20 @@ export async function getSubscription(subscriptionId: string): Promise<PayPalSub
 
   if (!res.ok) throw new Error('Subscription not found');
   return res.json();
+}
+
+// ביטול מנוי אצל PayPal. 422 אומר שהמנוי כבר מבוטל, וזה בסדר (הפעולה אידמפוטנטית).
+export async function cancelSubscription(subscriptionId: string, reason: string) {
+  const token = await getAccessToken();
+  const res = await fetch(
+    `${PAYPAL_BASE}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    }
+  );
+  if (!res.ok && res.status !== 422) throw new Error(`PayPal cancel failed (${res.status})`);
 }
 
 export async function verifyWebhookSignature(headers: Headers, event: unknown): Promise<boolean> {

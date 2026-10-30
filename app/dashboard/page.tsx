@@ -11,8 +11,12 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>('');
-  const [isPro, setIsPro] = useState(false); 
+  const [isPro, setIsPro] = useState(false);
+  const [endsAt, setEndsAt] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -20,6 +24,10 @@ export default function DashboardPage() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') === 'success') {
         // מנקים את הפרמטר מהכתובת בלבד. הרשאות Pro נקבעות בשרת.
+        window.history.replaceState(null, '', '/dashboard');
+      }
+      if (params.get('subscription') === '1') {
+        setShowSubscription(true);
         window.history.replaceState(null, '', '/dashboard');
       }
 
@@ -41,10 +49,12 @@ export default function DashboardPage() {
       setUserEmail(user.email || 'User');
       const { data: proRow } = await supabase
         .from('pro_users')
-        .select('is_active')
+        .select('is_active, ends_at')
         .eq('user_id', user.id)
         .maybeSingle();
       setIsPro(proRow?.is_active === true);
+      // מציגים תאריך סיום רק אם הוא עדיין בעתיד
+      setEndsAt(proRow?.ends_at && new Date(proRow.ends_at).getTime() > Date.now() ? proRow.ends_at : null);
 
       const { data: sitesData, error: sitesError } = await supabase
         .from('sites')
@@ -116,6 +126,31 @@ export default function DashboardPage() {
     router.push('/create');
   };
 
+  const handleCancelSubscription = async () => {
+    if (!confirm('לבטל את המנוי? האתר שלך יישאר באוויר עד סוף התקופה ששולמה, ואחר כך יורד מהאוויר.')) return;
+    setIsCancelling(true);
+    setCancelError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/paypal/cancel', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'שגיאה בביטול המנוי');
+
+      setEndsAt(data.endsAt ?? null);
+      if (!data.endsAt) setIsPro(false);
+      fetchSitesAndAppointments();
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : 'שגיאה בביטול המנוי');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const subscriptionEnds = endsAt ? new Date(endsAt) : null;
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
@@ -140,6 +175,42 @@ export default function DashboardPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-[#fafafa] font-sans text-gray-900 selection:bg-blue-100 relative">
       
+      {showSubscription && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 relative space-y-5">
+            <button onClick={() => setShowSubscription(false)} aria-label="סגור" className="absolute top-4 left-4 bg-gray-100 text-gray-600 hover:bg-gray-200 w-10 h-10 rounded-full text-xl">✖</button>
+            <h2 className="text-2xl font-extrabold text-gray-900">ניהול מנוי 💳</h2>
+
+            {subscriptionEnds ? (
+              <>
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-orange-900 space-y-1">
+                  <p className="font-bold">המנוי בוטל</p>
+                  <p className="text-sm">האתר שלך נשאר באוויר עד <strong>{subscriptionEnds.toLocaleDateString('he-IL')}</strong>. אחרי התאריך הזה הוא יורד מהאוויר, והנתונים שלך נשמרים.</p>
+                </div>
+                <button onClick={() => router.push('/checkout')} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">חדש את המנוי</button>
+              </>
+            ) : isPro ? (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-blue-900 space-y-1">
+                  <p className="font-bold">מסלול Pro פעיל</p>
+                  <p className="text-sm">29 ₪ לחודש. הביטול נכנס לתוקף בסוף התקופה ששולמה, והאתר נשאר באוויר עד אז.</p>
+                </div>
+                {cancelError && <p className="text-sm font-bold text-red-600 bg-red-50 rounded-xl p-3">{cancelError}</p>}
+                <button onClick={handleCancelSubscription} disabled={isCancelling} className="w-full bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 disabled:opacity-60">
+                  {isCancelling ? 'מבטל...' : 'בטל מנוי'}
+                </button>
+                <p className="text-xs text-gray-500 text-center">אפשר לבטל גם ישירות מחשבון ה-PayPal שלך.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-600 text-sm">אין לך מנוי פעיל. אתרים שלא שולם עליהם נשארים טיוטה, ולא גלויים לגולשים.</p>
+                <button onClick={() => router.push('/checkout')} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700">שדרג ל-Pro ופרסם</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -173,6 +244,13 @@ export default function DashboardPage() {
                 >
                   <span>סגור חלון</span>
                   <span>✖</span>
+                </button>
+                <button
+                  className="px-4 py-3 text-right hover:bg-blue-50 text-blue-700 border-b transition font-medium flex justify-between items-center"
+                  onClick={() => { setShowSettings(false); setShowSubscription(true); }}
+                >
+                  <span>ניהול מנוי</span>
+                  <span>💳</span>
                 </button>
                 <a
                   href={supportWhatsappUrl(isPro ? 'היי, אני מנוי Pro ואשמח לעזרה עם האתר שלי.' : 'היי, אשמח לשמוע פרטים נוספים על חבילת ה-Pro של SiteAI.')}
@@ -310,10 +388,17 @@ export default function DashboardPage() {
                 
                 <div className="p-8 flex flex-col flex-grow bg-white relative">
                   
-                  <div className="absolute -top-5 right-8 bg-white px-4 py-1.5 rounded-full text-xs font-bold text-green-600 shadow-md border border-gray-100 flex items-center gap-2 pointer-events-none">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    באוויר
-                  </div>
+                  {site.is_pro ? (
+                    <div className="absolute -top-5 right-8 bg-white px-4 py-1.5 rounded-full text-xs font-bold text-green-600 shadow-md border border-gray-100 flex items-center gap-2 pointer-events-none">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      באוויר
+                    </div>
+                  ) : (
+                    <Link href="/checkout" className="absolute -top-5 right-8 bg-orange-50 px-4 py-1.5 rounded-full text-xs font-bold text-orange-600 shadow-md border border-orange-200 flex items-center gap-2 hover:bg-orange-100">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                      טיוטה, לחצו לפרסום
+                    </Link>
+                  )}
 
                   <h4 
                     onClick={() => handleEdit(site)}

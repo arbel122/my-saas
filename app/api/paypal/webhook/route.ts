@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getSubscription, verifyWebhookSignature } from '@/app/utils/paypal';
-import { setProStatus } from '@/app/utils/pro';
+import { isStillPaid, periodEnd, setProStatus } from '@/app/utils/pro';
+import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 
 const ACTIVATING_EVENTS = ['BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.RE-ACTIVATED'];
-const DEACTIVATING_EVENTS = [
-  'BILLING.SUBSCRIPTION.CANCELLED',
-  'BILLING.SUBSCRIPTION.SUSPENDED',
-  'BILLING.SUBSCRIPTION.EXPIRED',
-];
+const CANCELLED_EVENT = 'BILLING.SUBSCRIPTION.CANCELLED';
+const DEACTIVATING_EVENTS = ['BILLING.SUBSCRIPTION.SUSPENDED', 'BILLING.SUBSCRIPTION.EXPIRED'];
 
 export async function POST(req: Request) {
   try {
@@ -18,7 +16,8 @@ export async function POST(req: Request) {
     }
 
     const eventType: string = event.event_type;
-    if (!ACTIVATING_EVENTS.includes(eventType) && !DEACTIVATING_EVENTS.includes(eventType)) {
+    const known = [...ACTIVATING_EVENTS, ...DEACTIVATING_EVENTS, CANCELLED_EVENT];
+    if (!known.includes(eventType)) {
       return NextResponse.json({ received: true });
     }
 
@@ -28,8 +27,26 @@ export async function POST(req: Request) {
     if (subscription.plan_id !== process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID || !subscription.custom_id) {
       return NextResponse.json({ received: true });
     }
+    const userId = subscription.custom_id;
 
-    await setProStatus(subscription.custom_id, subscription.id, subscription.status === 'ACTIVE');
+    if (ACTIVATING_EVENTS.includes(eventType)) {
+      await setProStatus(userId, subscription.id, subscription.status === 'ACTIVE');
+    } else if (eventType === CANCELLED_EVENT) {
+      // מנוי שבוטל נשאר פעיל עד סוף התקופה ששולמה. אם כבר קבענו תאריך סיום (ביטול מהדשבורד), לא דורסים אותו.
+      const { data: row } = await getSupabaseAdmin()
+        .from('pro_users')
+        .select('ends_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!isStillPaid(row?.ends_at)) {
+        const end = periodEnd(subscription);
+        await setProStatus(userId, subscription.id, isStillPaid(end), isStillPaid(end) ? end : null);
+      }
+    } else {
+      await setProStatus(userId, subscription.id, false);
+    }
+
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error('PayPal webhook error:', err);

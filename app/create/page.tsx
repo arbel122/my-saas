@@ -653,7 +653,7 @@ export default function CreatePage() {
                 <button className="px-5 py-4 text-right hover:bg-gray-50 border-b border-gray-50 text-gray-700 font-medium flex justify-between items-center transition-colors" onClick={() => setShowSettings(false)}><span>המשך עריכה</span><span>✏️</span></button>
                 <button className="px-5 py-4 text-right hover:bg-red-50 text-red-600 font-medium flex justify-between items-center transition-colors border-b border-gray-50" onClick={resetAndGoHome}><span>יצירת אתר חדש</span><span>🔄</span></button>
                 
-                <button className="px-5 py-4 text-right hover:bg-red-100 text-red-700 font-bold flex justify-between items-center transition-colors bg-red-50/50" onClick={() => { alert('במערכת האמיתית, כפתור זה יעביר אותך לפורטל ניהול המנוי לביטול התשלום באופן אוטומטי.'); setShowSettings(false); }}>
+                <button className="px-5 py-4 text-right hover:bg-red-100 text-red-700 font-bold flex justify-between items-center transition-colors bg-red-50/50" onClick={() => { setShowSettings(false); router.push('/dashboard?subscription=1'); }}>
                   <span>הפסקת תשלום (ביטול מנוי)</span><span>💳</span>
                 </button>
               </div>

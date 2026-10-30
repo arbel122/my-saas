@@ -13,6 +13,9 @@ export default function PublicSitePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [hasIncrementedView, setHasIncrementedView] = useState(false);
+  // אתר שלא שולם עליו: גולשים רואים "עוד לא פורסם", ובעל האתר המחובר רואה תצוגה מקדימה
+  const [unpublished, setUnpublished] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
   
   // חלונית קביעת תור
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -42,9 +45,18 @@ export default function PublicSitePage() {
         if (supabaseError) throw supabaseError;
         
         if (data && data.content) {
+          if (data.is_pro !== true) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.id === data.user_id) {
+              setIsPreview(true);
+            } else {
+              setUnpublished(true);
+              return;
+            }
+          }
           setSiteData(data.content);
           
-          if (!hasIncrementedView) {
+          if (!hasIncrementedView && data.is_pro === true) {
             setHasIncrementedView(true);
             try {
               // מונים צפייה אחת לכל גולש בסשן. הספירה עצמה נעשית בשרת.
@@ -126,6 +138,16 @@ export default function PublicSitePage() {
     );
   }
 
+  if (unpublished) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center" dir="rtl">
+        <div className="text-6xl mb-4">🚧</div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">האתר הזה עדיין לא פורסם</h1>
+        <p className="text-gray-500 max-w-md">בעל העסק עדיין עובד עליו. נסו שוב מאוחר יותר.</p>
+      </div>
+    );
+  }
+
   if (error || !siteData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center">
@@ -136,6 +158,12 @@ export default function PublicSitePage() {
 
   return (
     <div dir="rtl" className="min-h-screen font-sans bg-white relative pb-32">
+      {isPreview && (
+        <div className="bg-orange-500 text-white px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-sm font-bold sticky top-0 z-[300]">
+          <span>תצוגה מקדימה: האתר עדיין לא פורסם, ורק אתה רואה אותו. אי אפשר לקבוע בו תורים.</span>
+          <a href="/checkout" className="bg-white text-orange-600 px-4 py-1.5 rounded-full hover:bg-orange-50">פרסם את האתר</a>
+        </div>
+      )}
       
       {/* -------------------- מודל ביטול תור -------------------- */}
       {isCancelModalOpen && (

@@ -35,10 +35,11 @@ export async function POST(req: Request) {
 
     const { data: proRow } = await supabase
       .from('pro_users')
-      .select('is_active')
+      .select('is_active, ends_at')
       .eq('user_id', user.id)
       .maybeSingle();
-    const isPro = proRow?.is_active === true;
+    // מנוי שבוטל נשאר פעיל עד תאריך הסיום, גם אם המשימה היומית עוד לא הורידה אותו
+    const isPro = proRow?.is_active === true && (!proRow.ends_at || new Date(proRow.ends_at).getTime() > Date.now());
 
     if (id) {
       const { data, error } = await supabase

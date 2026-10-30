@@ -51,11 +51,15 @@ export async function POST(req: Request) {
 
     const { data: site } = await supabase
       .from('sites')
-      .select('id, content')
+      .select('id, content, is_pro')
       .eq('id', siteId)
       .maybeSingle();
     if (!site) {
       return NextResponse.json({ error: 'האתר לא נמצא' }, { status: 404 });
+    }
+    // קביעת תורים היא חלק ממסלול Pro: אתר שלא שולם עליו לא מקבל תורים
+    if (site.is_pro !== true) {
+      return NextResponse.json({ error: 'האתר עדיין לא פורסם' }, { status: 403 });
     }
     if (!isBookingEnabled(site.content)) {
       return NextResponse.json({ error: 'קביעת תורים לא פעילה באתר הזה' }, { status: 403 });
