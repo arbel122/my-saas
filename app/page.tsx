@@ -21,6 +21,9 @@ export default function HomePage() {
           <a href="#templates" className="hover:text-white transition-colors cursor-pointer">
             דוגמאות לאתרים
           </a>
+          <a href="#guide" className="hover:text-white transition-colors cursor-pointer">
+            מדריך
+          </a>
           <Link href="/terms" className="hover:text-white transition-colors">
             תקנון
           </Link>
@@ -133,6 +136,78 @@ export default function HomePage() {
               <p className="text-sm text-slate-400">הצגת השירות, מחירון וקליטת פניות מהירה ישר מהשטח.</p>
               <span className="inline-block mt-4 text-sm font-bold text-purple-400">צפה באתר הדוגמה ←</span>
             </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* מדריך: איך יוצרים אתר */}
+      <section id="guide" className="py-24 px-6 max-w-4xl mx-auto relative z-10 border-t border-white/5 scroll-mt-10">
+        <div className="text-center mb-14">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-4">
+            מדריך: <span className="text-blue-400">איך יוצרים אתר לעסק</span>
+          </h2>
+          <p className="text-slate-400">מההרשמה ועד אתר חי עם קישור ללקוחות. לוקח כמה דקות.</p>
+        </div>
+
+        <ol className="space-y-5">
+          {[
+            {
+              title: 'נכנסים וצוללים ישר פנימה',
+              text: 'לוחצים על "צור אתר בחינם עכשיו". אפשר ליצור ולערוך את האתר בלי לשלם. תשלום נדרש רק ברגע הפרסום.',
+            },
+            {
+              title: 'מתארים את העסק',
+              text: 'כותבים כמה משפטים: מה העסק עושה, אילו שירותים יש ובאיזה אזור. ככל שהתיאור מדויק יותר, האתר יצא טוב יותר.',
+            },
+            {
+              title: 'עונים על שתי שאלות קצרות',
+              text: 'האם הלקוחות יכולים לקבוע תור אונליין? האם יש לך מוצרים למכירה? לפי התשובות האתר יכלול יומן תורים, קטלוג מוצרים, או את שניהם.',
+            },
+            {
+              title: 'ה-AI בונה את האתר',
+              text: 'תוך שניות מקבלים אתר שלם: כותרת, טקסט על העסק, שירותים עם מחירים, תמונות וכפתור וואטסאפ.',
+            },
+            {
+              title: 'עורכים ומתאימים',
+              text: 'משנים טקסטים ומחירים ישירות באתר, בוחרים צבע שמתאים למותג, וקובעים שעות פעילות וימי חופש. כך הלקוחות יראו רק שעות פנויות אמיתיות.',
+            },
+            {
+              title: 'מפרסמים ומקבלים קישור',
+              text: 'המנוי עולה 29 ₪ לחודש בתשלום מאובטח דרך PayPal, ואפשר לבטל בכל רגע. מיד אחרי התשלום האתר באוויר ומקבלים קישור לשלוח ללקוחות, לשים בביו באינסטגרם או בסטטוס בוואטסאפ.',
+            },
+            {
+              title: 'מנהלים מהדשבורד',
+              text: 'בדשבורד רואים את התורים שנקבעו, כמה אנשים ביקרו באתר, ואת הביקורות מהלקוחות. אפשר להסתיר ביקורת, לערוך את האתר ולנהל את המנוי.',
+            },
+          ].map((step, i) => (
+            <li key={step.title} className="flex gap-5 bg-white/5 border border-white/10 rounded-2xl p-6">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 text-white font-black flex items-center justify-center">
+                {i + 1}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">{step.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{step.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
+          <h3 className="font-bold text-blue-300 mb-3">טיפים לאתר שמביא לקוחות</h3>
+          <ul className="space-y-2 text-sm text-slate-300 list-disc pr-5">
+            <li>כתבו בתיאור את העיר או האזור שבו אתם עובדים.</li>
+            <li>הכניסו מחירים אמיתיים. לקוחות סומכים יותר על מחיר ברור.</li>
+            <li>הגדירו מספר וואטסאפ שאתם עונים בו, כדי לקבל פניות ותורים ישר לטלפון.</li>
+            <li>בקשו מלקוחות מרוצים לכתוב ביקורת אחרי התור. ביקורות מגדילות אמון.</li>
+          </ul>
+        </div>
+
+        <div className="text-center mt-12">
+          <Link
+            href="/create"
+            className="inline-block bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-full shadow-xl shadow-blue-600/30 transition-transform hover:scale-105 text-lg"
+          >
+            מתחילים ליצור את האתר
           </Link>
         </div>
       </section>
