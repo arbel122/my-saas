@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/app/utils/supabase';
 import SiteView from '../../components/SiteView';
+import type { StaffCatalog } from '../../utils/staff';
 
 // initialContent: אתר מפורסם שכבר נטען בשרת (מהיר יותר, וגוגל רואה את התוכן).
-export default function PublicSiteClient({ siteId, initialContent }: { siteId: string; initialContent?: any }) {
+export default function PublicSiteClient({ siteId, initialContent, staffCatalogs }: { siteId: string; initialContent?: any; staffCatalogs?: StaffCatalog[] }) {
   const [siteData, setSiteData] = useState<any>(initialContent ?? null);
   const [loading, setLoading] = useState(!initialContent);
   const [error, setError] = useState(false);
@@ -116,6 +117,7 @@ export default function PublicSiteClient({ siteId, initialContent }: { siteId: s
       siteId={siteId}
       isPreview={isPreview}
       openMyAppointments={openMyAppointments}
+      staffCatalogs={staffCatalogs}
     />
   );
 }

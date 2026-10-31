@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Logo from '@/app/components/Logo';
 import ReminderButton from '@/app/components/ReminderButton';
+import CatalogEditor from '@/app/components/CatalogEditor';
+import type { CatalogCategory } from '@/app/components/CatalogSection';
 import { getAuthHeader } from '@/app/utils/auth-client';
 import { dayLabel, formatApptDate } from '@/app/utils/reminders';
 
@@ -15,6 +17,8 @@ type Membership = {
   myName: string;
   allServices: string[];
   services: string[];
+  industry: string;
+  catalog: CatalogCategory[];
   appointments: Appt[];
 };
 
@@ -53,6 +57,19 @@ export default function StaffDashboardPage() {
     if (!res.ok) return setMessage(data.error || 'שגיאה בשמירה.');
     setMemberships((prev) => prev && prev.map((x) => (x.staffId === m.staffId ? { ...x, services: data.services } : x)));
     setMessage('השירותים נשמרו.');
+  };
+
+  const saveCatalog = async (m: Membership, catalog: CatalogCategory[]) => {
+    setMessage('');
+    const res = await fetch(`/api/staff/${m.staffId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+      body: JSON.stringify({ catalog }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return setMessage(data.error || 'שגיאה בשמירת המוצרים. ייתכן שהאפשרות עוד לא הופעלה.');
+    setMemberships((prev) => prev && prev.map((x) => (x.staffId === m.staffId ? { ...x, catalog: data.catalog } : x)));
+    setMessage('המוצרים נשמרו ויוצגו באתר על שמכם.');
   };
 
   const leave = async (m: Membership) => {
@@ -146,6 +163,17 @@ export default function StaffDashboardPage() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div className="-mx-6 rounded-2xl overflow-hidden border border-gray-100">
+                <CatalogEditor
+                  catalog={m.catalog}
+                  onChange={(catalog) => saveCatalog(m, catalog)}
+                  businessName={m.businessName}
+                  industry={m.industry}
+                  title="המוצרים שלי"
+                  subtitle="אם אתם מוכרים מוצרים (שמפו, מוצרי טיפוח וכדומה), הוסיפו אותם כאן. הם יוצגו באתר העסק על שמכם."
+                />
               </div>
 
               <button onClick={() => leave(m)} className="text-xs font-bold text-red-500 underline">עזיבת הצוות</button>

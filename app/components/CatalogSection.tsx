@@ -10,6 +10,9 @@ type Props = {
   themeColor?: string;
   phone?: string;
   businessName?: string;
+  // כותרת אחרת (למשל מוצרים של מטפל) ושם המטפל להודעת הוואטסאפ
+  title?: string;
+  contextName?: string;
 };
 
 function whatsappNumber(phone?: string) {
@@ -19,7 +22,7 @@ function whatsappNumber(phone?: string) {
 }
 
 // תצוגת הקטגוריות באתר הציבורי: כפתור לכל קטגוריה שפותח את רשימת המוצרים.
-export default function CatalogSection({ catalog, themeColor = '#2563eb', phone, businessName }: Props) {
+export default function CatalogSection({ catalog, themeColor = '#2563eb', phone, businessName, title = 'מה אנחנו מוכרים', contextName }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const categories = (catalog ?? []).filter((c) => c.name && c.items?.length > 0);
   if (categories.length === 0) return null;
@@ -30,7 +33,7 @@ export default function CatalogSection({ catalog, themeColor = '#2563eb', phone,
   return (
     <section className="py-16 px-4 bg-white border-t" dir="rtl">
       <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">מה אנחנו מוכרים</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-8">{title}</h2>
         <div className="flex flex-wrap justify-center gap-3">
           {categories.map((c) => (
             <button
@@ -64,7 +67,7 @@ export default function CatalogSection({ catalog, themeColor = '#2563eb', phone,
                     <span className="font-extrabold text-lg" style={{ color: themeColor }}>{item.price || ''}</span>
                     {wa && (
                       <a
-                        href={`https://wa.me/${wa}?text=${encodeURIComponent(`שלום${businessName ? ` ${businessName}` : ''}, אני מעוניין ב${item.name} (${active.name}) שראיתי באתר.`)}`}
+                        href={`https://wa.me/${wa}?text=${encodeURIComponent(`שלום${businessName ? ` ${businessName}` : ''}, אני מעוניין ב${item.name} (${active.name})${contextName ? ` אצל ${contextName}` : ''} שראיתי באתר.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="bg-[#15803d] hover:bg-[#166534] text-white font-bold text-sm px-4 py-2 rounded-full transition-colors"

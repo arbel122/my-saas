@@ -19,6 +19,8 @@ export async function GET(req: Request) {
 
   const { data: sites } = await supabase.from('sites').select('id, name, content').in('id', rows.map((r) => r.site_id));
   const today = israelNow().date;
+  // הקטלוג נשלף בנפרד, כדי שהדשבורד ימשיך לעבוד גם אם העמודה עוד לא קיימת
+  const { data: catalogRows } = await supabase.from('site_staff').select('id, catalog').in('id', rows.map((r) => r.id));
 
   const memberships = await Promise.all(
     rows.map(async (row) => {
@@ -35,6 +37,8 @@ export async function GET(req: Request) {
         siteId: row.site_id,
         businessName: (site?.content?.businessName as string) || site?.name || 'העסק',
         myName: row.name,
+        industry: (site?.content?.industry as string) || '',
+        catalog: (catalogRows ?? []).find((c) => c.id === row.id)?.catalog ?? [],
         allServices: siteServiceNames(site?.content),
         services: row.services,
         appointments: (appts ?? []).map((a) => ({

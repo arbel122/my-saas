@@ -7,6 +7,7 @@ import BookingModal from './BookingModal';
 import CatalogSection from './CatalogSection';
 import MyAppointmentsModal from './MyAppointmentsModal';
 import { accessibleColor } from '../utils/color';
+import type { StaffCatalog } from '../utils/staff';
 
 type Props = {
   siteData: any;
@@ -17,6 +18,8 @@ type Props = {
   demo?: boolean;
   /** פתיחה אוטומטית של "התורים שלי" (קישור אישי מלקוח) */
   openMyAppointments?: boolean;
+  /** מוצרים שמטפלים בצוות מוכרים, מוצגים על שמם */
+  staffCatalogs?: StaffCatalog[];
 };
 
 const DEMO_REVIEWS = [
@@ -26,7 +29,7 @@ const DEMO_REVIEWS = [
 ];
 
 // התצוגה של אתר עסק, משותפת לאתר האמיתי (/site/[id]) ולאתרי הדוגמה (/demo/[slug]).
-export default function SiteView({ siteData, siteId, isPreview = false, demo = false, openMyAppointments = false }: Props) {
+export default function SiteView({ siteData, siteId, isPreview = false, demo = false, openMyAppointments = false, staffCatalogs = [] }: Props) {
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState('');
   const [isMyAppointmentsOpen, setIsMyAppointmentsOpen] = useState(openMyAppointments);
@@ -196,6 +199,18 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
         phone={siteData.contactPhone}
         businessName={siteData.businessName}
       />
+
+      {staffCatalogs.map((member) => (
+        <CatalogSection
+          key={member.id}
+          catalog={member.catalog}
+          themeColor={theme}
+          phone={siteData.contactPhone}
+          businessName={siteData.businessName}
+          title={`המוצרים של ${member.name}`}
+          contextName={member.name}
+        />
+      ))}
 
       {bookingEnabled && (
         <div className="py-10 px-4 text-center bg-white border-t border-gray-100">

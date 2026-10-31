@@ -11,6 +11,8 @@ type Props = {
   themeColor?: string;
   businessName?: string;
   industry?: string;
+  title?: string;
+  subtitle?: string;
 };
 
 type Step = 'closed' | 'name' | 'questions' | 'review';
@@ -29,7 +31,7 @@ async function callCatalog(payload: Record<string, unknown>) {
 const inputCls = 'w-full p-3 rounded-xl border border-gray-200 bg-gray-50 outline-none focus:border-blue-500 focus:bg-white text-sm';
 
 // עורך הקטגוריות בעורך האתר: אשף AI ליצירת קטגוריה חדשה, ועריכה ידנית של קיימות.
-export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb', businessName, industry }: Props) {
+export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb', businessName, industry, title = 'מה אנחנו מוכרים', subtitle = 'לעסקים שמוכרים מוצרים: הוסיפו קטגוריה, ענו על כמה שאלות, וה-AI יבנה את רשימת המוצרים.' }: Props) {
   const [step, setStep] = useState<Step>('closed');
   const [draft, setDraft] = useState<CatalogCategory>({ id: '', name: '', items: [] });
   const [isNew, setIsNew] = useState(true);
@@ -134,8 +136,8 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
   return (
     <div className="py-16 px-4 bg-gray-50 border-t border-gray-100" dir="rtl">
       <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-3xl font-extrabold text-gray-900 mb-3">מה אנחנו מוכרים</h2>
-        <p className="text-gray-500 mb-8 text-sm">לעסקים שמוכרים מוצרים: הוסיפו קטגוריה, ענו על כמה שאלות, וה-AI יבנה את רשימת המוצרים.</p>
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-3">{title}</h2>
+        <p className="text-gray-500 mb-8 text-sm">{subtitle}</p>
 
         <div className="flex flex-wrap justify-center gap-3">
           {catalog.map((c) => (

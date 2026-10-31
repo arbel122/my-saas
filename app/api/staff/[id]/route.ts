@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE, getUserFromRequest } from '@/app/utils/auth';
-import { cleanStaffName, cleanStaffServices } from '@/app/utils/staff';
+import { cleanCatalog, cleanStaffName, cleanStaffServices } from '@/app/utils/staff';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -33,6 +33,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
   if (body?.services !== undefined) {
     update.services = cleanStaffServices(body.services, access.site?.content);
+  }
+  // מוצרים של המטפל (המטפל עצמו או בעל העסק)
+  if (body?.catalog !== undefined) {
+    update.catalog = cleanCatalog(body.catalog);
   }
   // שם: רק בעל העסק משנה
   if (body?.name !== undefined && access.isOwner) {

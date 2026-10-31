@@ -48,3 +48,48 @@ export async function getActiveStaff(supabase: SupabaseClient, siteId: string): 
 export function staffForService(staff: StaffRow[], service: string): StaffRow[] {
   return staff.filter((s) => Array.isArray(s.services) && s.services.includes(service));
 }
+
+// ---- מוצרים של מטפל ----
+
+export type StaffCatalogItem = { name: string; description?: string; price?: string; image?: string };
+export type StaffCatalogCategory = { id: string; name: string; items: StaffCatalogItem[] };
+export type StaffCatalog = { id: string; name: string; catalog: StaffCatalogCategory[] };
+
+const clipText = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
+// ניקוי קטלוג שמגיע מהדפדפן: מגבלות אורך וכמות, ותמונות רק מהאחסון שלנו.
+export function cleanCatalog(input: unknown): StaffCatalogCategory[] {
+  const imagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/`;
+  return (Array.isArray(input) ? input : [])
+    .slice(0, 10)
+    .map((category, index) => {
+      const c = (category ?? {}) as { id?: unknown; name?: unknown; items?: unknown };
+      const items = (Array.isArray(c.items) ? c.items : [])
+        .slice(0, 30)
+        .map((raw) => {
+          const i = (raw ?? {}) as { name?: unknown; description?: unknown; price?: unknown; image?: unknown };
+          const item: StaffCatalogItem = {
+            name: clipText(i.name, 80),
+            description: clipText(i.description, 200),
+            price: clipText(i.price, 30),
+          };
+          if (typeof i.image === 'string' && i.image.startsWith(imagePrefix) && i.image.length < 500) item.image = i.image;
+          return item;
+        })
+        .filter((i) => i.name);
+      return { id: clipText(c.id, 40) || `cat-${index}-${Date.now()}`, name: clipText(c.name, 60), items };
+    })
+    .filter((c) => c.name && c.items.length > 0);
+}
+
+// הקטלוגים של מטפלים פעילים באתר. אם העמודה עוד לא קיימת מחזיר רשימה ריקה והאתר ממשיך לעבוד.
+export async function getStaffCatalogs(supabase: SupabaseClient, siteId: string): Promise<StaffCatalog[]> {
+  const { data, error } = await supabase
+    .from('site_staff')
+    .select('id, name, catalog')
+    .eq('site_id', siteId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return (data as StaffCatalog[]).filter((s) => Array.isArray(s.catalog) && s.catalog.length > 0);
+}
