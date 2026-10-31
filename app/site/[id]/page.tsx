@@ -1,115 +1,60 @@
-'use client';
+import type { Metadata } from 'next';
+import SiteClient from './SiteClient';
+import { getPublishedSite, siteOrigin } from '@/app/utils/public-site';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from '@/app/utils/supabase';
-import SiteView from '../../components/SiteView';
+type Props = { params: Promise<{ id: string }> };
 
-export default function PublicSitePage() {
-  const params = useParams();
-  const [siteData, setSiteData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [hasIncrementedView, setHasIncrementedView] = useState(false);
-  // אתר שלא שולם עליו: גולשים רואים "עוד לא פורסם", ובעל האתר המחובר רואה תצוגה מקדימה
-  const [unpublished, setUnpublished] = useState(false);
-  const [isPreview, setIsPreview] = useState(false);
+const clip = (text: unknown, max: number) => String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
-  // הלקוח הגיע מקישור אישי לתור: פותחים לו את "התורים שלי"
-  const [openMyAppointments, setOpenMyAppointments] = useState(false);
+// כותרת, תיאור ותמונה לשיתוף (וואטסאפ, פייסבוק) ולגוגל, לפי תוכן האתר של העסק.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const site = await getPublishedSite(id);
+  if (!site) return { title: 'Opnyx', robots: { index: false } };
 
-  // טעינת האתר ובדיקה אם הלקוח הגיע מלינק ביטול
-  useEffect(() => {
-    if (!params?.id) return;
+  const name = clip(site.businessName, 70) || 'אתר עסק';
+  const title = site.heroTitle ? `${name} | ${clip(site.heroTitle, 60)}` : name;
+  const description = clip(site.heroSubtitle || site.aboutText, 160);
+  const image = typeof site.generatedImageUrl === 'string' && /^https?:\/\//.test(site.generatedImageUrl) ? site.generatedImageUrl : undefined;
+  const url = `${siteOrigin()}/site/${id}`;
 
-    const fetchSiteAndIncrementView = async () => {
-      try {
-        const { data, error: supabaseError } = await supabase
-          .from('sites')
-          .select('*')
-          .eq('id', params.id as string)
-          .single();
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: 'website', locale: 'he_IL', siteName: name, images: image ? [image] : undefined },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title, description, images: image ? [image] : undefined },
+  };
+}
 
-        if (supabaseError) throw supabaseError;
+export default async function PublicSitePage({ params }: Props) {
+  const { id } = await params;
+  const site = await getPublishedSite(id);
 
-        if (data && data.content) {
-          if (data.is_pro !== true) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && user.id === data.user_id) {
-              setIsPreview(true);
-            } else {
-              setUnpublished(true);
-              return;
-            }
-          }
-          setSiteData(data.content);
-
-          if (!hasIncrementedView && data.is_pro === true) {
-            setHasIncrementedView(true);
-            try {
-              // מונים צפייה אחת לכל גולש בסשן. הספירה עצמה נעשית בשרת.
-              const viewedKey = `viewed:${params.id}`;
-              if (!sessionStorage.getItem(viewedKey)) {
-                sessionStorage.setItem(viewedKey, '1');
-                fetch(`/api/sites/${params.id}/view`, { method: 'POST' }).catch(() => {});
-              }
-            } catch {
-              // sessionStorage לא זמין (למשל גלישה פרטית חסומה). מדלגים על הספירה.
-            }
-          }
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error('שגיאה בשליפת האתר:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
+  // נתונים מובנים לגוגל: "עסק מקומי"
+  const jsonLd = site
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        name: clip(site.businessName, 120),
+        description: clip(site.heroSubtitle || site.aboutText, 300),
+        url: `${siteOrigin()}/site/${id}`,
+        ...(site.contactPhone ? { telephone: clip(site.contactPhone, 30) } : {}),
+        ...(typeof site.generatedImageUrl === 'string' && /^https?:\/\//.test(site.generatedImageUrl) ? { image: site.generatedImageUrl } : {}),
+        ...(site.workingHours ? { openingHours: clip(site.workingHours, 120) } : {}),
       }
-    };
-
-    fetchSiteAndIncrementView();
-
-    const searchParams = new URLSearchParams(window.location.search);
-    const cancelId = searchParams.get('cancel');
-    if (cancelId && /^[0-9a-f-]{36}$/i.test(cancelId)) {
-      // קישורים ישנים מההודעות: פותחים את "התורים שלי" (מהחשבון)
-      setOpenMyAppointments(true);
-    }
-}, [params, hasIncrementedView]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (unpublished) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center" dir="rtl">
-        <div className="text-6xl mb-4">🚧</div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">האתר הזה עדיין לא פורסם</h1>
-        <p className="text-gray-500 max-w-md">בעל העסק עדיין עובד עליו. נסו שוב מאוחר יותר.</p>
-      </div>
-    );
-  }
-
-  if (error || !siteData) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">אופס! האתר לא נמצא</h1>
-      </div>
-    );
-  }
+    : null;
 
   return (
-    <SiteView
-      siteData={siteData}
-      siteId={params?.id as string}
-      isPreview={isPreview}
-      openMyAppointments={openMyAppointments}
-    />
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          // מחליפים < כדי שתוכן העסק לא יוכל לסגור את תגית הסקריפט
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        />
+      )}
+      <SiteClient initialContent={site ?? undefined} />
+    </>
   );
 }

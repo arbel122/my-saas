@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import AccessibilityAndCookies from "./components/AccessibilityAndCookies";
+import { siteOrigin } from "./utils/public-site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,9 +16,14 @@ const logoFont = Plus_Jakarta_Sans({
   variable: "--font-logo",
 });
 
+const homeTitle = "Opnyx | אתר מקצועי לעסק שלך תוך 10 שניות";
+const homeDescription = "מתארים את העסק במשפט, והבינה המלאכותית בונה אתר עם שירותים, קביעת תורים אונליין, ביקורות וקישור לוואטסאפ.";
+
 export const metadata: Metadata = {
-  title: "Opnyx",
-  description: "AI-powered landing page generator",
+  metadataBase: new URL(siteOrigin()),
+  title: homeTitle,
+  description: homeDescription,
+  openGraph: { title: homeTitle, description: homeDescription, type: "website", locale: "he_IL", siteName: "Opnyx" },
   appleWebApp: {
     capable: true,
     title: "Opnyx",

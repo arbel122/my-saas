@@ -5,6 +5,8 @@ import { supabase } from '../utils/supabase';
 import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
 import InstallAppButton from '../components/InstallAppButton';
+import ReminderButton from '../components/ReminderButton';
+import { dayLabel, formatApptDate } from '../utils/reminders';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -85,7 +87,7 @@ export default function DashboardPage() {
           .from('appointments')
           .select('*')
           .in('site_id', siteIds)
-          .order('created_at', { ascending: false });
+          .order('starts_at', { ascending: true });
 
         if (apptsError) throw apptsError;
 
@@ -357,6 +359,7 @@ export default function DashboardPage() {
                       <th className="py-4 px-6">טלפון נייד</th>
                       <th className="py-4 px-6">מועד התור והשירות</th>
                       <th className="py-4 px-6">שייך לאתר</th>
+                      <th className="py-4 px-6">תזכורת</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm font-medium text-gray-700">
@@ -370,9 +373,17 @@ export default function DashboardPage() {
                               {appt.customer_phone} 📞
                             </a>
                           </td>
-                          <td className="py-4 px-6">{appt.date}</td>
+                          <td className="py-4 px-6">
+                            {dayLabel(appt.starts_at) && (
+                              <span className="ml-2 bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">{dayLabel(appt.starts_at)}</span>
+                            )}
+                            {formatApptDate(appt.date)}
+                          </td>
                           <td className="py-4 px-6 text-gray-500">
                             {matchingSite?.name || 'אתר עסקי'}
+                          </td>
+                          <td className="py-4 px-6">
+                            <ReminderButton appt={appt} businessName={matchingSite?.content?.businessName || matchingSite?.name || 'העסק'} />
                           </td>
                         </tr>
                       );
