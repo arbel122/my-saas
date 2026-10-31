@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'SiteAI - מחולל אתרים לעסקים',
-    short_name: 'SiteAI',
+    name: 'Opnyx - מחולל אתרים לעסקים',
+    short_name: 'Opnyx',
     description: 'צור אתר מקצועי לעסק שלך תוך 2 דקות',
     lang: 'he',
     dir: 'rtl',

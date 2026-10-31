@@ -62,7 +62,7 @@ export default function LoginPage() {
             <span className="text-4xl text-white">✨</span>
           </div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-            SiteAI
+            Opnyx
           </h1>
           <p className="text-gray-500 mt-2 font-medium">
             {isLogin ? 'ברוכים השבים למערכת' : 'הצטרפו למהפכת האתרים'}

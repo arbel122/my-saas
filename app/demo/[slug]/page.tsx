@@ -10,7 +10,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const demo = getDemoSite(slug);
-  return { title: demo ? `${demo.content.businessName} (אתר דוגמה) | Site-AI` : 'Site-AI' };
+  return { title: demo ? `${demo.content.businessName} (אתר דוגמה) | Opnyx` : 'Opnyx' };
 }
 
 export default async function DemoSitePage({ params }: { params: Promise<{ slug: string }> }) {

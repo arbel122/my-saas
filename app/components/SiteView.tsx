@@ -59,7 +59,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
     <div dir="rtl" className="min-h-screen font-sans bg-white relative pb-32">
       {demo && (
         <div className="bg-gray-900 text-white px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
-          <span>זהו אתר דוגמה שנוצר ב-Site-AI.</span>
+          <span>זהו אתר דוגמה שנוצר ב-Opnyx.</span>
           <Link href="/create" className="bg-white text-gray-900 px-4 py-1.5 rounded-full hover:bg-gray-100">צור אתר כזה לעסק שלך</Link>
           <Link href="/#templates" className="text-gray-300 underline">חזרה לדוגמאות</Link>
         </div>

@@ -9,7 +9,7 @@ export default function HomePage() {
         <div className="flex items-center gap-2 cursor-pointer">
           <Link href="/">
             <span className="text-2xl font-black tracking-tight">
-              Site<span className="text-purple-400">-AI</span>
+              Opn<span className="text-purple-400">yx</span>
             </span>
           </Link>
         </div>
@@ -214,7 +214,7 @@ export default function HomePage() {
 
       {/* פוטר */}
       <footer className="border-t border-white/10 py-8 text-center text-slate-500 text-sm relative z-10 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-6 gap-4">
-        <p>© 2026 Site-AI. כל הזכויות שמורות.</p>
+        <p>© 2026 Opnyx. כל הזכויות שמורות.</p>
         <div className="flex gap-6">
           <Link href="/terms" className="hover:text-slate-300 transition-colors">תקנון ותנאי שימוש</Link>
           <Link href="/login" className="hover:text-slate-300 transition-colors">התחברות</Link>

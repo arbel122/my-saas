@@ -9,11 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SiteAI",
+  title: "Opnyx",
   description: "AI-powered landing page generator",
   appleWebApp: {
     capable: true,
-    title: "SiteAI",
+    title: "Opnyx",
     statusBarStyle: "default",
   },
 };

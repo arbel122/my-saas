@@ -295,7 +295,7 @@ export default function DashboardPage() {
                   <span>💳</span>
                 </button>
                 <a
-                  href={supportWhatsappUrl(isPro ? 'היי, אני מנוי Pro ואשמח לעזרה עם האתר שלי.' : 'היי, אשמח לשמוע פרטים נוספים על חבילת ה-Pro של SiteAI.')}
+                  href={supportWhatsappUrl(isPro ? 'היי, אני מנוי Pro ואשמח לעזרה עם האתר שלי.' : 'היי, אשמח לשמוע פרטים נוספים על חבילת ה-Pro של Opnyx.')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-3 text-right hover:bg-green-50 text-green-700 border-b transition font-medium flex justify-between items-center"

@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'הצהרת נגישות | SiteAI',
-  description: 'הצהרת הנגישות והתאמות הנגישות שבוצעו באתר SiteAI',
+  title: 'הצהרת נגישות | Opnyx',
+  description: 'הצהרת הנגישות והתאמות הנגישות שבוצעו באתר Opnyx',
 };
 
 export default function AccessibilityPage() {

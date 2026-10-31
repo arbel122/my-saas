@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import MyAppointmentsList from '@/app/components/MyAppointmentsList';
 
-export const metadata = { title: 'התורים שלי | Site-AI' };
+export const metadata = { title: 'התורים שלי | Opnyx' };
 
 // המקום הקבוע של הלקוח: כל התורים שקבע, בכל האתרים, מהחשבון שלו.
 export default function MyAppointmentsPage() {
@@ -9,7 +9,7 @@ export default function MyAppointmentsPage() {
     <div dir="rtl" className="min-h-screen bg-gray-50 font-sans">
       <nav className="bg-white border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="text-xl font-black text-gray-900">Site<span className="text-purple-500">-AI</span></Link>
+          <Link href="/" className="text-xl font-black text-gray-900">Opn<span className="text-purple-500">yx</span></Link>
           <Link href="/dashboard" className="text-sm font-bold text-gray-600 hover:text-gray-900 px-2 py-2">לדשבורד</Link>
         </div>
       </nav>
