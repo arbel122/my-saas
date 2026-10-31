@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יש להתחבר' }, { status: 401 });
     }
 
-    const { reviewId, hidden } = (await req.json()) ?? {};
+    const { reviewId, hidden } = (await req.json().catch(() => null)) ?? {};
     if ((typeof reviewId !== 'string' && typeof reviewId !== 'number') || typeof hidden !== 'boolean') {
       return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
     }

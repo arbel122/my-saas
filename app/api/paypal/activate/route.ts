@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יש להתחבר כדי להמשיך' }, { status: 401 });
     }
 
-    const { subscriptionId } = await req.json();
+    const { subscriptionId } = (await req.json().catch(() => null)) ?? {};
     if (typeof subscriptionId !== 'string' || !subscriptionId) {
       return NextResponse.json({ error: 'חסר מזהה מנוי' }, { status: 400 });
     }

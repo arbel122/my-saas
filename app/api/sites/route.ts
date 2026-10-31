@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יש להתחבר כדי לשמור את האתר' }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const { id, name, content } = body ?? {};
 
     if (!content || typeof content !== 'object' || Array.isArray(content)) {

@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יותר מדי בקשות. נסו שוב מאוחר יותר.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const action = body?.action;
     const category = text(body?.category, 60);
     const businessName = text(body?.businessName, 80);

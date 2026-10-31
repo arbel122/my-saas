@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יותר מדי ניסיונות' }, { status: 429 });
     }
 
-    const { token, rating, comment } = (await req.json()) ?? {};
+    const { token, rating, comment } = (await req.json().catch(() => null)) ?? {};
 
     if (typeof token !== 'string' || !UUID_RE.test(token)) {
       return NextResponse.json({ error: 'התור לא נמצא' }, { status: 404 });

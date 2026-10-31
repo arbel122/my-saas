@@ -13,7 +13,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return new NextResponse(null, { status: 204 });
   }
 
-  const { error } = await getSupabaseAdmin().rpc('increment_site_views', { p_site_id: id });
+  // סופרים צפיות רק באתרים שפורסמו
+  const supabase = getSupabaseAdmin();
+  const { data: site } = await supabase.from('sites').select('is_pro').eq('id', id).maybeSingle();
+  if (!site || site.is_pro !== true) {
+    return new NextResponse(null, { status: 204 });
+  }
+
+  const { error } = await supabase.rpc('increment_site_views', { p_site_id: id });
   if (error) console.error('Increment views error:', error);
 
   return new NextResponse(null, { status: 204 });

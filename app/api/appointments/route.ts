@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'יש להתחבר כדי לקבוע תור.', needsLogin: true }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const { siteId, service, date, time, customerName, customerPhone } = body ?? {};
 
     if (typeof siteId !== 'string' || !UUID_RE.test(siteId)) {
