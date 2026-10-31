@@ -333,6 +333,26 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-lg">כאן תוכל לנהל את האתרים שלך ולעקוב אחר התורים של הלקוחות.</p>
         </header>
 
+        {/* --- איך נמצאים בגוגל --- */}
+        {sites.some((s: any) => s.is_pro) && (
+          <section className="mb-12 bg-blue-50 border border-blue-100 rounded-3xl p-6 md:p-8">
+            <h2 className="text-xl md:text-2xl font-black text-gray-900 mb-2">איך הלקוחות ימצאו אתכם בגוגל? 🔎</h2>
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              כשמחפשים &quot;קצביה בירושלים&quot;, גוגל מציג קודם את <strong>המפה והעסקים עם פרופיל</strong>, ואחר כך אתרים. האתר שלכם מוכן לגוגל, ופרופיל חינמי יעזור לו מאוד:
+            </p>
+            <ol className="list-decimal pr-5 space-y-1.5 text-sm text-gray-700 mb-5">
+              <li>פתחו פרופיל בחינם ב-Google Business Profile, עם אותו שם וכתובת כמו באתר.</li>
+              <li>הוסיפו בפרופיל את קישור האתר, שעות פעילות ותמונות.</li>
+              <li>בקשו מלקוחות מרוצים לכתוב ביקורת בגוגל.</li>
+              <li>שתפו את קישור האתר בוואטסאפ, באינסטגרם ובפייסבוק. קישורים מביאים אמינות וגולשים.</li>
+            </ol>
+            <a href="https://business.google.com" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-full text-sm">
+              לפתיחת פרופיל בגוגל
+            </a>
+            <p className="text-xs text-gray-500 mt-3">דירוג בגוגל לוקח זמן (שבועות עד חודשים) ותלוי בתחרות. אי אפשר להבטיח מקום מסוים.</p>
+          </section>
+        )}
+
         {/* --- אזור יומן התורים --- */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
@@ -528,7 +548,7 @@ export default function DashboardPage() {
                   {/* הכפתורים הנקיים למטה */}
                   <div className="flex gap-3 mt-auto pt-2">
                     <Link 
-                      href={`/site/${site.id}`} 
+                      href={site.content?.slug ? `/b/${encodeURIComponent(site.content.slug)}` : `/site/${site.id}`} 
                       target="_blank"
                       className="flex-1 bg-gray-50 border border-gray-100 text-gray-700 py-3 rounded-xl font-bold text-center hover:bg-gray-100 hover:text-gray-900 transition-all flex items-center justify-center gap-2 text-sm shadow-sm"
                     >

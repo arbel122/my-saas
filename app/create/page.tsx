@@ -156,6 +156,7 @@ export default function CreatePage() {
         generatedImageUrl: data.site.hero_image,
         aboutText: data.site.aboutText || 'אנחנו כאן כדי לתת לכם את השירות הטוב ביותר.',
         location: data.site.location || formData.location,
+        industry: formData.industry,
         businessType: formData.businessType,
         workingHours: formatSchedule(DEFAULT_SCHEDULE),
         schedule: DEFAULT_SCHEDULE,

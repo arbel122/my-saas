@@ -152,6 +152,9 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
       <div className="py-20 px-4 max-w-4xl mx-auto text-center">
         <h2 className="text-3xl font-bold text-gray-800 mb-8">על העסק</h2>
         <p className="text-lg text-gray-600 whitespace-pre-wrap">{siteData.aboutText}</p>
+        {siteData.location && (
+          <p className="mt-6 text-gray-700 font-bold">📍 {siteData.businessType === 'mobile' ? 'אזורי שירות' : 'כתובת'}: <span className="font-normal">{siteData.location}</span></p>
+        )}
         {siteData.workingHours && (
           <p className="mt-6 text-gray-700 font-bold">⏰ שעות פעילות: <span className="font-normal">{siteData.workingHours}</span></p>
         )}

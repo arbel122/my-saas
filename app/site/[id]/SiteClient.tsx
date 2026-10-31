@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import { supabase } from '@/app/utils/supabase';
 import SiteView from '../../components/SiteView';
 
 // initialContent: אתר מפורסם שכבר נטען בשרת (מהיר יותר, וגוגל רואה את התוכן).
-export default function PublicSiteClient({ initialContent }: { initialContent?: any }) {
-  const params = useParams();
+export default function PublicSiteClient({ siteId, initialContent }: { siteId: string; initialContent?: any }) {
   const [siteData, setSiteData] = useState<any>(initialContent ?? null);
   const [loading, setLoading] = useState(!initialContent);
   const [error, setError] = useState(false);
@@ -21,17 +19,17 @@ export default function PublicSiteClient({ initialContent }: { initialContent?: 
 
   // טעינת האתר ובדיקה אם הלקוח הגיע מלינק ביטול
   useEffect(() => {
-    if (!params?.id) return;
+    if (!siteId) return;
 
     const countView = () => {
       if (hasIncrementedView) return;
       setHasIncrementedView(true);
       try {
         // מונים צפייה אחת לכל גולש בסשן. הספירה עצמה נעשית בשרת.
-        const viewedKey = `viewed:${params.id}`;
+        const viewedKey = `viewed:${siteId}`;
         if (!sessionStorage.getItem(viewedKey)) {
           sessionStorage.setItem(viewedKey, '1');
-          fetch(`/api/sites/${params.id}/view`, { method: 'POST' }).catch(() => {});
+          fetch(`/api/sites/${siteId}/view`, { method: 'POST' }).catch(() => {});
         }
       } catch {
         // sessionStorage לא זמין (למשל גלישה פרטית חסומה). מדלגים על הספירה.
@@ -43,7 +41,7 @@ export default function PublicSiteClient({ initialContent }: { initialContent?: 
         const { data, error: supabaseError } = await supabase
           .from('sites')
           .select('*')
-          .eq('id', params.id as string)
+          .eq('id', siteId)
           .single();
 
         if (supabaseError) throw supabaseError;
@@ -84,7 +82,7 @@ export default function PublicSiteClient({ initialContent }: { initialContent?: 
       // קישורים ישנים מההודעות: פותחים את "התורים שלי" (מהחשבון)
       setOpenMyAppointments(true);
     }
-}, [params, hasIncrementedView, initialContent]);
+}, [siteId, hasIncrementedView, initialContent]);
 
   if (loading) {
     return (
@@ -115,7 +113,7 @@ export default function PublicSiteClient({ initialContent }: { initialContent?: 
   return (
     <SiteView
       siteData={siteData}
-      siteId={params?.id as string}
+      siteId={siteId}
       isPreview={isPreview}
       openMyAppointments={openMyAppointments}
     />

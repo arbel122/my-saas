@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { getUserFromRequest, UUID_RE } from '@/app/utils/auth';
+import { slugBase } from '@/app/utils/slug';
 
 const MAX_CONTENT_BYTES = 1_000_000;
 const MAX_SITES_PER_USER = 20;
+
+// כתובת קריאה ייחודית לאתר (/b/קצביית-דוד-ירושלים). נקבעת פעם אחת, ולא משתנה כשעורכים.
+async function uniqueSlug(supabase: ReturnType<typeof getSupabaseAdmin>, content: Record<string, unknown>, excludeId?: string) {
+  const base = slugBase(content);
+  for (let i = 1; i <= 30; i++) {
+    const candidate = i === 1 ? base : `${base}-${i}`;
+    let query = supabase.from('sites').select('id').eq('content->>slug', candidate).limit(1);
+    if (excludeId) query = query.neq('id', excludeId);
+    const { data } = await query;
+    if (!data || data.length === 0) return candidate;
+  }
+  return `${base}-${Math.random().toString(36).slice(2, 7)}`;
+}
 
 // יצירה או עדכון של אתר של המשתמש המחובר. סטטוס ה-Pro נקבע כאן, בשרת, לפי pro_users.
 export async function POST(req: Request) {
@@ -50,6 +64,8 @@ export async function POST(req: Request) {
         .eq('user_id', user.id)
         .maybeSingle();
       content.hiddenReviewIds = Array.isArray(existing?.content?.hiddenReviewIds) ? existing.content.hiddenReviewIds : [];
+      // הכתובת הקריאה מנוהלת רק בשרת ולא משתנה בעריכה
+      content.slug = typeof existing?.content?.slug === 'string' && existing.content.slug ? existing.content.slug : await uniqueSlug(supabase, content, id);
 
       const { data, error } = await supabase
         .from('sites')
@@ -74,6 +90,8 @@ export async function POST(req: Request) {
     if ((count ?? 0) >= MAX_SITES_PER_USER) {
       return NextResponse.json({ error: 'הגעת למספר האתרים המקסימלי' }, { status: 403 });
     }
+
+    content.slug = await uniqueSlug(supabase, content);
 
     const { data, error } = await supabase
       .from('sites')
