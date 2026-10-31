@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { useRouter } from 'next/navigation';
+import Logo from '../components/Logo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -58,12 +59,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 m-4 bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-white/50 relative z-10">
         
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-500/30 transform rotate-3 hover:rotate-6 transition-transform">
-            <span className="text-4xl text-white">✨</span>
-          </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-            Opnyx
+          <h1 className="flex justify-center pr-3">
+            <Logo size={56} tone="light" />
           </h1>
+          <span className="inline-block mt-4 text-[11px] font-bold tracking-[0.2em] text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5">
+            ✦ INSTANT WEBSITES
+          </span>
           <p className="text-gray-500 mt-2 font-medium">
             {isLogin ? 'ברוכים השבים למערכת' : 'הצטרפו למהפכת האתרים'}
           </p>

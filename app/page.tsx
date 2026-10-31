@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import HomeNavActions from '@/app/components/HomeNavActions';
+import Logo from '@/app/components/Logo';
 
 export default function HomePage() {
   return (
@@ -8,9 +9,7 @@ export default function HomePage() {
       <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-2 cursor-pointer">
           <Link href="/">
-            <span className="text-2xl font-black tracking-tight">
-              Opn<span className="text-purple-400">yx</span>
-            </span>
+            <Logo size={34} />
           </Link>
         </div>
 

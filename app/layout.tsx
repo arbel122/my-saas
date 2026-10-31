@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import AccessibilityAndCookies from "./components/AccessibilityAndCookies";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+// הגופן של הלוגו
+const logoFont = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: "800",
+  variable: "--font-logo",
 });
 
 export const metadata: Metadata = {
@@ -33,7 +40,7 @@ export default function RootLayout({
     <html
       lang="he"
       dir="rtl"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${logoFont.variable} h-full antialiased`}
     >
       <body className={`${inter.className} min-h-full flex flex-col`}>
         {children}
