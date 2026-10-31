@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "SiteAI",
   description: "AI-powered landing page generator",
+  appleWebApp: {
+    capable: true,
+    title: "SiteAI",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {

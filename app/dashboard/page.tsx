@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
+import InstallAppButton from '../components/InstallAppButton';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -264,7 +265,8 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-4 relative">
-            <button 
+            <InstallAppButton />
+            <button
               onClick={() => setShowSettings(!showSettings)}
               className="bg-white px-4 py-2.5 rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 hover:scale-105 transition-all z-50 flex items-center gap-2 text-sm font-bold text-gray-700"
               title="הגדרות חשבון"
