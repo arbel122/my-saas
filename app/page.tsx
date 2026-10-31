@@ -55,7 +55,7 @@ export default function HomePage() {
           >
             צור אתר בחינם עכשיו
           </Link>
-          <a href="#how-it-works" className="text-slate-500 text-sm flex items-center gap-2 hover:text-slate-300 transition-colors mt-2 cursor-pointer">
+          <a href="#how-it-works" className="text-slate-400 text-sm flex items-center gap-2 hover:text-slate-300 transition-colors mt-2 cursor-pointer">
             ↓ איך זה עובד?
           </a>
         </div>
@@ -212,7 +212,7 @@ export default function HomePage() {
       </section>
 
       {/* פוטר */}
-      <footer className="border-t border-white/10 py-8 text-center text-slate-500 text-sm relative z-10 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-6 gap-4">
+      <footer className="border-t border-white/10 py-8 text-center text-slate-400 text-sm relative z-10 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-6 gap-4">
         <p>© 2026 Opnyx. כל הזכויות שמורות.</p>
         <div className="flex gap-6">
           <Link href="/terms" className="hover:text-slate-300 transition-colors">תקנון ותנאי שימוש</Link>

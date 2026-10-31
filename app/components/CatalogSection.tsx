@@ -63,7 +63,7 @@ export default function CatalogSection({ catalog, themeColor = '#2563eb', phone,
                         href={`https://wa.me/${wa}?text=${encodeURIComponent(`שלום${businessName ? ` ${businessName}` : ''}, אני מעוניין ב${item.name} (${active.name}) שראיתי באתר.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-sm px-4 py-2 rounded-full transition-colors"
+                        className="bg-[#15803d] hover:bg-[#166534] text-white font-bold text-sm px-4 py-2 rounded-full transition-colors"
                       >
                         💬 אני מעוניין
                       </a>

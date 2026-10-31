@@ -6,6 +6,7 @@ import ReviewsSection from './ReviewsSection';
 import BookingModal from './BookingModal';
 import CatalogSection from './CatalogSection';
 import MyAppointmentsModal from './MyAppointmentsModal';
+import { accessibleColor } from '../utils/color';
 
 type Props = {
   siteData: any;
@@ -32,7 +33,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
   const [showDemoNotice, setShowDemoNotice] = useState(false);
 
   const bookingEnabled = siteData.bookingEnabled !== false;
-  const theme = siteData.themeColor || '#2563eb';
+  const theme = accessibleColor(siteData.themeColor);
 
   const scrollToContact = () => {
     document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -56,7 +57,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
   };
 
   return (
-    <div dir="rtl" className="min-h-screen font-sans bg-white relative pb-32">
+    <div dir="rtl" className="min-h-screen font-sans bg-white relative">
       {demo && (
         <div className="bg-gray-900 text-white px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
           <span>זהו אתר דוגמה שנוצר ב-Opnyx.</span>
@@ -96,7 +97,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
           siteId={siteId}
           businessName={siteData.businessName}
           contactPhone={siteData.contactPhone}
-          themeColor={siteData.themeColor}
+          themeColor={theme}
           onClose={() => setIsMyAppointmentsOpen(false)}
         />
       )}
@@ -106,7 +107,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
           siteId={siteId}
           businessName={siteData.businessName}
           services={siteData.services || []}
-          themeColor={siteData.themeColor}
+          themeColor={theme}
           title={siteData.bookingTitle}
           text={siteData.bookingText}
           contactPhone={siteData.contactPhone}
@@ -188,7 +189,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
 
       <CatalogSection
         catalog={siteData.catalog}
-        themeColor={siteData.themeColor}
+        themeColor={theme}
         phone={siteData.contactPhone}
         businessName={siteData.businessName}
       />
@@ -235,13 +236,22 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
               href={!demo && siteData.contactPhone ? `https://wa.me/972${siteData.contactPhone.replace(/^0/, '')}` : '#'}
               target={!demo && siteData.contactPhone ? '_blank' : '_self'}
               onClick={demo ? (e) => { e.preventDefault(); setShowDemoNotice(true); } : undefined}
-              className="inline-flex items-center justify-center gap-3 bg-[#25D366] text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-[#1EBE5A] shadow-lg w-full md:w-auto"
+              className="inline-flex items-center justify-center gap-3 bg-[#15803d] text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-[#166534] shadow-lg w-full md:w-auto"
             >
               <span>וואטסאפ לבעל העסק</span><span className="text-2xl">💬</span>
             </a>
           </div>
         </div>
       </div>
+
+      <footer className="pt-6 pb-24 px-4 text-center text-xs text-gray-500 border-t border-gray-100 bg-white">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <Link href="/privacy" className="underline hover:text-gray-800 py-1">מדיניות פרטיות</Link>
+          <Link href="/terms" className="underline hover:text-gray-800 py-1">תקנון</Link>
+          <Link href="/accessibility" className="underline hover:text-gray-800 py-1">הצהרת נגישות</Link>
+          <span>נבנה ב-<Link href="/" className="underline hover:text-gray-800">Opnyx</Link></span>
+        </div>
+      </footer>
     </div>
   );
 }

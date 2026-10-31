@@ -163,7 +163,7 @@ export default function BookingModal({
                   href={`https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-[#25D366] hover:bg-[#1ebe57] text-white font-extrabold text-lg py-4 rounded-xl shadow-lg transition-all"
+                  className="block bg-[#15803d] hover:bg-[#166534] text-white font-extrabold text-lg py-4 rounded-xl shadow-lg transition-all"
                 >
                   💬 שלח הודעה בוואטסאפ
                 </a>
@@ -263,6 +263,9 @@ export default function BookingModal({
                 >
                   {isSubmitting ? 'שומר תור...' : 'שריין לי את התור'}
                 </button>
+                <p className="text-xs text-gray-500 leading-relaxed text-center">
+                  בלחיצה על הכפתור שמך ומספר הטלפון שלך יועברו לעסק לצורך מתן השירות. פרטים ב<Link href="/privacy" target="_blank" className="underline">מדיניות הפרטיות</Link> וב<Link href="/terms" target="_blank" className="underline">תקנון</Link>.
+                </p>
               </div>
             </div>
           </>

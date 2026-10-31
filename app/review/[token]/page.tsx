@@ -207,6 +207,9 @@ export default function ReviewPage() {
           >
             {isSubmitting ? 'שומר ביקורת...' : 'שלח חוות דעת ✨'}
           </button>
+          <p className="text-xs text-gray-500 text-center leading-relaxed">
+            הביקורת תוצג באתר העסק בשם הפרטי שלך ובאות הראשונה של שם המשפחה. פרטים ב<a href="/privacy" target="_blank" className="underline">מדיניות הפרטיות</a>.
+          </p>
         </form>
       </div>
     </div>

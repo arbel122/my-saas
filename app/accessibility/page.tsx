@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { CONTACT_EMAIL } from '../utils/config';
 
 export const metadata: Metadata = {
   title: 'הצהרת נגישות | Opnyx',
@@ -27,7 +28,7 @@ export default function AccessibilityPage() {
         <p className="text-slate-600">
           אם נתקלתם בבעיית נגישות או שיש לכם הצעה לשיפור, נשמח שתפנו אלינו:
           <br />
-          📧 דוא"ל: arbelmo2012@gmail.com
+          📧 דוא&quot;ל: <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-600 underline">{CONTACT_EMAIL}</a>
         </p>
       </div>
     </div>

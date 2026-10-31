@@ -53,14 +53,14 @@ export default function PricingPage() {
               <li className="flex items-center gap-3 text-gray-700">
                 <span className="text-green-500">✓</span> עריכת טקסטים והתאמה אישית
               </li>
-              <li className="flex items-center gap-3 text-gray-400">
-                <span className="text-gray-300">✖</span> תמונות מאגר רגילות (ללא AI אישי)
+              <li className="flex items-center gap-3 text-gray-500">
+                <span className="text-gray-500">✖</span> תמונות מאגר רגילות (ללא AI אישי)
               </li>
-              <li className="flex items-center gap-3 text-gray-400">
-                <span className="text-gray-300">✖</span> ללא קבלת לידים או קביעת תורים
+              <li className="flex items-center gap-3 text-gray-500">
+                <span className="text-gray-500">✖</span> ללא קבלת לידים או קביעת תורים
               </li>
-              <li className="flex items-center gap-3 text-gray-400">
-                <span className="text-gray-300">✖</span> ללא חיבור ישיר לוואטסאפ של העסק
+              <li className="flex items-center gap-3 text-gray-500">
+                <span className="text-gray-500">✖</span> ללא חיבור ישיר לוואטסאפ של העסק
               </li>
             </ul>
 
