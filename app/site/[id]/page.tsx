@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/app/utils/supabase';
 import SiteView from '../../components/SiteView';
-import { rememberAppointment } from '../../utils/my-appointments';
 
 export default function PublicSitePage() {
   const params = useParams();
@@ -74,8 +73,7 @@ export default function PublicSitePage() {
     const searchParams = new URLSearchParams(window.location.search);
     const cancelId = searchParams.get('cancel');
     if (cancelId && /^[0-9a-f-]{36}$/i.test(cancelId)) {
-      // קישור אישי (גם ממכשיר אחר): שומרים את התור במכשיר הזה ופותחים את "התורים שלי"
-      rememberAppointment(params.id as string, { token: cancelId, service: '', date: '', time: '' });
+      // קישורים ישנים מההודעות: פותחים את "התורים שלי" (מהחשבון)
       setOpenMyAppointments(true);
     }
 }, [params, hasIncrementedView]);

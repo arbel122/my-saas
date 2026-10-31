@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
-import { UUID_RE } from '@/app/utils/auth';
+import { UUID_RE, getUserFromRequest } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
 import {
   generateSlots,
@@ -22,6 +22,12 @@ export async function POST(req: Request) {
   try {
     if (isRateLimited(`book:${getClientIp(req)}`, 10, 60 * 60 * 1000)) {
       return NextResponse.json({ error: 'יותר מדי ניסיונות. נסו שוב מאוחר יותר.' }, { status: 429 });
+    }
+
+    // קביעת תור דורשת חשבון לקוח, כדי שהתור יישמר ב"התורים שלי" של הלקוח בכל מכשיר
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json({ error: 'יש להתחבר כדי לקבוע תור.', needsLogin: true }, { status: 401 });
     }
 
     const body = await req.json();
@@ -89,6 +95,7 @@ export async function POST(req: Request) {
         site_id: siteId,
         customer_name: name,
         customer_phone: phone,
+        customer_user_id: user.id,
         date: `${date} בשעה ${time} (${service.trim()})`,
         slot_key: `${date} ${time}`,
         starts_at: `${date}T${time}:00`,

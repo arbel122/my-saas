@@ -3,13 +3,14 @@ import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
 import { hasStarted } from '@/app/utils/schedule';
+import { denyIfNotOwner } from '@/app/utils/appointment-access';
 
 type Ctx = { params: Promise<{ token: string }> };
 
 async function findByToken(token: string) {
   const { data } = await getSupabaseAdmin()
     .from('appointments')
-    .select('id, site_id, customer_name, date, starts_at')
+    .select('id, site_id, customer_name, customer_user_id, date, starts_at')
     .eq('token', token)
     .maybeSingle();
   return data;
@@ -29,6 +30,8 @@ export async function GET(req: Request, { params }: Ctx) {
   if (!appointment) {
     return NextResponse.json({ error: 'התור לא נמצא' }, { status: 404 });
   }
+  const denied = await denyIfNotOwner(req, appointment);
+  if (denied) return denied;
 
   const supabase = getSupabaseAdmin();
   const [{ data: site }, { data: review }] = await Promise.all([
@@ -61,6 +64,10 @@ export async function DELETE(req: Request, { params }: Ctx) {
 
   // תור שנכתבה עליו ביקורת כבר התקיים, ולכן אי אפשר לבטל אותו (וגם המסד חוסם מחיקה כזו).
   const appointment = await findByToken(token);
+  if (appointment) {
+    const denied = await denyIfNotOwner(req, appointment);
+    if (denied) return denied;
+  }
   if (appointment && hasStarted(appointment.starts_at)) {
     return NextResponse.json({ error: 'אי אפשר לבטל תור שכבר התקיים.' }, { status: 409 });
   }

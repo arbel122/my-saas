@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { israelNow } from '@/app/utils/schedule';
-import { rememberAppointment } from '@/app/utils/my-appointments';
+import { getAuthHeader } from '@/app/utils/auth-client';
 
 type Service = { name: string; duration?: string; price?: string };
 
@@ -56,6 +57,13 @@ export default function BookingModal({
 
   const today = israelNow().date;
 
+  // קביעת תור דורשת חשבון לקוח: כך התור נשמר ב"התורים שלי" בכל מכשיר
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    getAuthHeader().then((auth) => setLoggedIn(!!auth));
+  }, []);
+  const loginHref = `/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`;
+
   async function loadSlots(nextService: string, nextDate: string) {
     setTime('');
     setSlots(null);
@@ -93,11 +101,15 @@ export default function BookingModal({
     try {
       const res = await fetch('/api/appointments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
         body: JSON.stringify({ siteId, service, date, time, customerName: name, customerPhone: phone }),
       });
       const data = await res.json().catch(() => ({}));
 
+      if (res.status === 401) {
+        setLoggedIn(false);
+        return;
+      }
       if (!res.ok) {
         setError(data.error || 'שגיאה בקביעת התור. נסו שוב.');
         // השעה אולי נתפסה בינתיים: מרעננים את הרשימה
@@ -105,8 +117,6 @@ export default function BookingModal({
         return;
       }
       setBooked({ token: data.token, service, date, time, name: name.trim(), phone: phone.trim() });
-      // זוכרים את התור במכשיר, כדי שהלקוח יוכל לחזור לבטל או לכתוב ביקורת
-      rememberAppointment(siteId, { token: data.token, service, date, time });
     } catch {
       setError('שגיאה בקביעת התור. בדקו את החיבור ונסו שוב.');
     } finally {
@@ -118,7 +128,6 @@ export default function BookingModal({
   const waText = booked
     ? `שלום${businessName ? ` ${businessName}` : ''}, קבעתי תור באתר:\n${booked.service}\nבתאריך ${formatDate(booked.date)} בשעה ${booked.time}\nשם: ${booked.name}\nטלפון: ${booked.phone}`
     : '';
-  const cancelUrl = booked && typeof window !== 'undefined' ? `${window.location.origin}/site/${siteId}?cancel=${booked.token}` : '';
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6" dir="rtl">
@@ -126,7 +135,18 @@ export default function BookingModal({
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto relative z-10 p-6 md:p-8">
         <button onClick={onClose} aria-label="סגור" className="absolute top-4 left-4 bg-gray-100 text-gray-600 hover:bg-gray-200 w-10 h-10 rounded-full text-xl">✖</button>
 
-        {booked ? (
+        {loggedIn === false && !booked ? (
+          <div className="py-10 text-center space-y-4 max-w-md mx-auto">
+            <div className="text-5xl">🔐</div>
+            <h2 className="text-2xl font-black text-gray-900">כדי לקבוע תור צריך להתחבר</h2>
+            <p className="text-gray-600">
+              התחברו (או הירשמו בחינם), ואז כל התורים שלכם יישמרו ב&quot;התורים שלי&quot;, בכל מכשיר, עם אפשרות לבטל ולכתוב ביקורת.
+            </p>
+            <Link href={loginHref} className="inline-block text-white font-bold px-8 py-3 rounded-xl hover:opacity-90" style={{ backgroundColor: themeColor }}>
+              התחברות / הרשמה
+            </Link>
+          </div>
+        ) : booked ? (
           <div className="py-6 text-center space-y-5 max-w-lg mx-auto">
             <div className="text-5xl">🎉</div>
             <h2 className="text-3xl font-black text-emerald-900">התור נשמר!</h2>
@@ -162,14 +182,12 @@ export default function BookingModal({
               <p className="text-sm text-gray-600">העסק יראה את התור שלכם ביומן שלו.</p>
             )}
             {preview && (
-              <p className="text-xs text-gray-500">זה תור אמיתי לבדיקה: הוא נשמר ויופיע ביומן בדשבורד. אפשר לבטל אותו בקישור שלמטה.</p>
+              <p className="text-xs text-gray-500">זה תור אמיתי לבדיקה: הוא נשמר ויופיע ביומן בדשבורד. אפשר לבטל אותו ב&quot;התורים שלי&quot;.</p>
             )}
 
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-600 space-y-2 text-right">
               <p className="font-bold text-gray-800">צריכים לבטל? ורוצים לכתוב ביקורת אחרי התור?</p>
-              <p>הכול נמצא בכפתור <strong>&quot;התורים שלי&quot;</strong> בראש האתר: ביטול עד שהתור מתחיל, וביקורת אחרי שהוא התקיים. התור נשמר לכם במכשיר הזה.</p>
-              <p className="text-xs text-gray-500">רוצים לגשת ממכשיר אחר? שמרו את הקישור האישי:</p>
-              <a href={`/site/${siteId}?cancel=${booked.token}`} className="block break-all text-blue-600 underline text-xs" dir="ltr">{cancelUrl}</a>
+              <p>התור נשמר בחשבון שלכם. תמצאו אותו ב<strong>&quot;התורים שלי&quot;</strong> בראש האתר ובעמוד <Link href="/my-appointments" className="text-blue-600 underline">התורים שלי</Link>, מכל מכשיר שתתחברו ממנו: ביטול עד שהתור מתחיל, וביקורת אחרי שהוא התקיים.</p>
             </div>
             <div>
               <button onClick={onClose} className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-6 py-2.5 rounded-full text-sm transition-colors">סגור</button>

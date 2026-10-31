@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
+import { isRateLimited } from '@/app/utils/rate-limit';
+import { getUserFromRequest } from '@/app/utils/auth';
 
 const FALLBACK_QUESTIONS = [
   'אילו מוצרים, דגמים או מותגים אתם מוכרים בקטגוריה הזו?',
@@ -50,7 +51,11 @@ const text = (value: unknown, max: number) => (typeof value === 'string' ? value
 // שני שלבים: שאלות מותאמות לקטגוריה, ואז יצירת רשימת מוצרים מהתשובות של בעל העסק.
 export async function POST(req: Request) {
   try {
-    if (isRateLimited(`catalog:${getClientIp(req)}`, 20, 60 * 60 * 1000)) {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json({ error: 'יש להתחבר כדי להשתמש בעורך.', needsLogin: true }, { status: 401 });
+    }
+    if (isRateLimited(`catalog:${user.id}`, 20, 60 * 60 * 1000)) {
       return NextResponse.json({ error: 'יותר מדי בקשות. נסו שוב מאוחר יותר.' }, { status: 429 });
     }
 

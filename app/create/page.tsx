@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadSiteAsset } from '@/app/utils/upload';
 import { supabase } from '@/app/utils/supabase';
+import { getAuthHeader } from '@/app/utils/auth-client';
 import ScheduleEditor from '@/app/components/ScheduleEditor';
 import CatalogEditor from '@/app/components/CatalogEditor';
 import BookingModal from '@/app/components/BookingModal';
@@ -64,7 +65,11 @@ export default function CreatePage() {
   useEffect(() => {
     async function loadProStatus() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // יוצרים אתר רק אחרי הרשמה או התחברות
+      if (!user) {
+        router.replace('/login?next=/create');
+        return;
+      }
       const { data } = await supabase.from('pro_users').select('is_active').eq('user_id', user.id).maybeSingle();
       setIsPro(data?.is_active === true);
     }
@@ -137,7 +142,7 @@ export default function CreatePage() {
     try {
       const res = await fetch('/api/generate-site', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
         body: JSON.stringify({ businessDescription: combinedDescription })
       });
 

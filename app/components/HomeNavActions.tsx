@@ -19,6 +19,12 @@ export default function HomeNavActions() {
     return (
       <div className="flex items-center gap-4">
         <Link
+          href="/my-appointments"
+          className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-2 py-2"
+        >
+          התורים שלי
+        </Link>
+        <Link
           href="/dashboard"
           className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-5 py-2 text-sm font-bold transition-all hover:scale-105 shadow-lg shadow-blue-500/20"
         >

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { getAuthHeader } from '@/app/utils/auth-client';
 
 type AppointmentInfo = {
   customerName: string;
@@ -19,6 +20,7 @@ export default function ReviewPage() {
 
   const [appointment, setAppointment] = useState<AppointmentInfo | null>(null);
   const [notFound, setNotFound] = useState<boolean>(false);
+  const [needsLogin, setNeedsLogin] = useState<boolean>(false);
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -30,7 +32,11 @@ export default function ReviewPage() {
     async function fetchDetails() {
       if (!token) return;
       try {
-        const res = await fetch(`/api/appointments/${encodeURIComponent(token)}`);
+        const res = await fetch(`/api/appointments/${encodeURIComponent(token)}`, { headers: { ...(await getAuthHeader()) } });
+        if (res.status === 401) {
+          setNeedsLogin(true);
+          return;
+        }
         if (!res.ok) {
           setNotFound(true);
           return;
@@ -54,7 +60,7 @@ export default function ReviewPage() {
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
         body: JSON.stringify({ token, rating, comment }),
       });
       const data = await res.json().catch(() => ({}));
@@ -76,6 +82,21 @@ export default function ReviewPage() {
     return (
       <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-gray-500 font-bold text-lg">טוען את פרטי התור...</div>
+      </div>
+    );
+  }
+
+  if (needsLogin) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-xl border border-gray-100 text-center">
+          <div className="text-5xl mb-3">🔐</div>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-2">צריך להתחבר</h1>
+          <p className="text-gray-600 mb-6">התחברו לחשבון שקבע את התור כדי להשאיר ביקורת.</p>
+          <a href={`/login?next=${encodeURIComponent(`/review/${token}`)}`} className="block w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-black transition-all">
+            התחברות / הרשמה
+          </a>
+        </div>
       </div>
     );
   }

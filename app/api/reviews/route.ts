@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
 import { hasStarted } from '@/app/utils/schedule';
+import { denyIfNotOwner } from '@/app/utils/appointment-access';
 
 // ביקורת אחת לכל תור, רק למי שמחזיק במזהה האקראי של התור.
 export async function POST(req: Request) {
@@ -25,12 +26,14 @@ export async function POST(req: Request) {
 
     const { data: appointment } = await supabase
       .from('appointments')
-      .select('id, site_id, customer_name, starts_at')
+      .select('id, site_id, customer_name, customer_user_id, starts_at')
       .eq('token', token)
       .maybeSingle();
     if (!appointment) {
       return NextResponse.json({ error: 'התור לא נמצא' }, { status: 404 });
     }
+    const denied = await denyIfNotOwner(req, appointment);
+    if (denied) return denied;
     if (!hasStarted(appointment.starts_at)) {
       return NextResponse.json({ error: 'אפשר להשאיר ביקורת רק אחרי שהתור התקיים.' }, { status: 403 });
     }

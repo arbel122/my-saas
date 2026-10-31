@@ -266,6 +266,9 @@ export default function DashboardPage() {
           
           <div className="flex items-center gap-4 relative">
             <InstallAppButton />
+            <Link href="/my-appointments" className="hidden sm:block text-sm font-bold text-gray-600 hover:text-gray-900 px-2 py-2">
+              התורים שלי
+            </Link>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="bg-white px-4 py-2.5 rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 hover:scale-105 transition-all z-50 flex items-center gap-2 text-sm font-bold text-gray-700"

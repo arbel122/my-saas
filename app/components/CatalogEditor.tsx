@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { CatalogCategory, CatalogItem } from './CatalogSection';
+import { getAuthHeader } from '../utils/auth-client';
 
 type Props = {
   catalog: CatalogCategory[];
@@ -16,7 +17,7 @@ type Step = 'closed' | 'name' | 'questions' | 'review';
 async function callCatalog(payload: Record<string, unknown>) {
   const res = await fetch('/api/catalog', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
     body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));

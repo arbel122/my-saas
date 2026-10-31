@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getClientIp, isRateLimited } from "@/app/utils/rate-limit";
+import { isRateLimited } from "@/app/utils/rate-limit";
+import { getUserFromRequest } from "@/app/utils/auth";
 
 function cleanJsonResponse(rawText: string) {
   let cleaned = rawText.trim();
@@ -15,7 +16,13 @@ const MAX_DESCRIPTION_LENGTH = 2000;
 
 export async function POST(req: Request) {
   try {
-    if (isRateLimited(`generate:${getClientIp(req)}`, RATE_LIMIT, RATE_WINDOW_MS)) {
+    // יצירת אתר מותרת רק לבעל עסק שנרשם (וגם מגינה על עלות ה-AI)
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return NextResponse.json({ error: "יש להתחבר כדי ליצור אתר.", needsLogin: true }, { status: 401 });
+    }
+
+    if (isRateLimited(`generate:${user.id}`, RATE_LIMIT, RATE_WINDOW_MS)) {
       return NextResponse.json(
         { error: "יותר מדי ניסיונות. נסה שוב בעוד כמה דקות." },
         { status: 429 }
