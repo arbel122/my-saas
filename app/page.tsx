@@ -102,35 +102,38 @@ export default function HomePage() {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer group">
+          <Link href="/demo/salon" className="block bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform group">
             <div className="h-48 overflow-hidden">
               <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=600&q=80" alt="עיצוב שיער" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-2">מספרה ועיצוב שיער</h3>
-              <p className="text-sm text-slate-400">תמונות אווירה איכותיות, רשימת טיפולים וכפתור תור בוואטסאפ מובנה.</p>
+              <p className="text-sm text-slate-400">תמונות אווירה איכותיות, רשימת טיפולים וקביעת תורים אונליין.</p>
+              <span className="inline-block mt-4 text-sm font-bold text-purple-400">צפה באתר הדוגמה ←</span>
             </div>
-          </div>
-          
-          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer group">
+          </Link>
+
+          <Link href="/demo/lawyer" className="block bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform group">
             <div className="h-48 overflow-hidden">
               <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80" alt="משרד עורכי דין" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-2">משרד עורכי דין</h3>
               <p className="text-sm text-slate-400">עיצוב יוקרתי ונקי, פירוט תחומי התמחות ויצירת קשר מיידית לייעוץ.</p>
+              <span className="inline-block mt-4 text-sm font-bold text-purple-400">צפה באתר הדוגמה ←</span>
             </div>
-          </div>
-          
-          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer group hidden lg:block">
+          </Link>
+
+          <Link href="/demo/home-services" className="block bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:scale-105 transition-transform group">
             <div className="h-48 overflow-hidden">
               <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80" alt="שירותי ניקיון ושיפוץ" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
             </div>
             <div className="p-6">
               <h3 className="text-lg font-bold text-white mb-2">שירותים לבית ושיפוצים</h3>
-              <p className="text-sm text-slate-400">הצגת השירות, אזורי פעילות בארץ וקליטת לידים מהירה ישר מהשטח.</p>
+              <p className="text-sm text-slate-400">הצגת השירות, מחירון וקליטת פניות מהירה ישר מהשטח.</p>
+              <span className="inline-block mt-4 text-sm font-bold text-purple-400">צפה באתר הדוגמה ←</span>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 
