@@ -7,11 +7,11 @@ export function supportWhatsappUrl(message: string) {
 }
 
 // מייל הפניות שמופיע בתקנון, במדיניות הפרטיות ובהצהרת הנגישות. המקום היחיד להחלפה.
-export const CONTACT_EMAIL = 'arbelmo2012@gmail.com';
+export const CONTACT_EMAIL = 'siteai6767@gmail.com';
 
 // פרטי המפעיל. כל שדה שמלאים כאן מופיע אוטומטית בתקנון ובמדיניות הפרטיות; שדה ריק לא מוצג.
 export const OPERATOR = {
-  legalName: '', // שם משפטי או שם העוסק, למשל "ישראל ישראלי - עוסק פטור"
+  legalName: 'ארבל משה', // שם משפטי או שם העוסק
   taxId: '', // מספר עוסק (ת.ז. או ח.פ.)
   address: '', // כתובת למשלוח דואר
 };
