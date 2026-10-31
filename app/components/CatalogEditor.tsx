@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { CatalogCategory, CatalogItem } from './CatalogSection';
 import { getAuthHeader } from '../utils/auth-client';
+import { uploadSiteAssetWithError } from '../utils/upload';
 
 type Props = {
   catalog: CatalogCategory[];
@@ -36,6 +37,7 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
   const [answers, setAnswers] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
   const close = () => { setStep('closed'); setError(''); setBusy(false); };
 
@@ -103,6 +105,16 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
 
   const updateItem = (index: number, field: keyof CatalogItem, value: string) =>
     setDraft((d) => ({ ...d, items: d.items.map((item, i) => (i === index ? { ...item, [field]: value } : item)) }));
+
+  const uploadImage = async (index: number, file: File | undefined) => {
+    if (!file) return;
+    setUploadingIndex(index);
+    setError('');
+    const { url, error: uploadError } = await uploadSiteAssetWithError(file);
+    setUploadingIndex(null);
+    if (url) updateItem(index, 'image', url);
+    else setError(uploadError || 'שגיאה בהעלאת התמונה.');
+  };
 
   const save = () => {
     const items = draft.items.filter((i) => i.name.trim());
@@ -193,6 +205,19 @@ export default function CatalogEditor({ catalog, onChange, themeColor = '#2563eb
                         <input className={inputCls} placeholder="שם המוצר" value={item.name} onChange={(e) => updateItem(i, 'name', e.target.value)} maxLength={80} />
                         <textarea className={inputCls} rows={2} placeholder="תיאור קצר" value={item.description || ''} onChange={(e) => updateItem(i, 'description', e.target.value)} maxLength={200} />
                         <input className={inputCls} placeholder="מחיר (למשל 79 ₪)" value={item.price || ''} onChange={(e) => updateItem(i, 'price', e.target.value)} maxLength={30} />
+                        <div className="flex items-center gap-3 pt-1">
+                          {item.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.image} alt="" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                          ) : (
+                            <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center text-2xl text-gray-300" aria-hidden="true">🖼️</div>
+                          )}
+                          <label className="cursor-pointer text-sm font-bold text-blue-600 hover:underline">
+                            {uploadingIndex === i ? 'מעלה...' : item.image ? 'החלף תמונה' : 'הוסף תמונה למוצר'}
+                            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingIndex !== null} onChange={(e) => { uploadImage(i, e.target.files?.[0]); e.target.value = ''; }} />
+                          </label>
+                          {item.image && <button type="button" onClick={() => updateItem(i, 'image', '')} className="text-xs text-red-500 font-bold">הסר תמונה</button>}
+                        </div>
                       </div>
                     ))}
                   </div>

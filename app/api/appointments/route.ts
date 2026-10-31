@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE, getUserFromRequest } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
+import { getActiveStaff, staffForService, type StaffRow } from '@/app/utils/staff';
 import {
   generateSlots,
   isBookingEnabled,
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => null);
-    const { siteId, service, date, time, customerName, customerPhone } = body ?? {};
+    const { siteId, service, date, time, customerName, customerPhone, staffId } = body ?? {};
 
     if (typeof siteId !== 'string' || !UUID_RE.test(siteId)) {
       return NextResponse.json({ error: 'אתר לא תקין' }, { status: 400 });
@@ -89,30 +90,65 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'העסק לא פעיל בשעה הזו. אנא בחרו שעה אחרת.' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('appointments')
-      .insert({
-        site_id: siteId,
-        customer_name: name,
-        customer_phone: phone,
-        customer_user_id: user.id,
-        date: `${date} בשעה ${time} (${service.trim()})`,
-        slot_key: `${date} ${time}`,
-        starts_at: `${date}T${time}:00`,
-        ends_at: `${date}T${toTime(startMin + duration)}:00`,
-      })
-      .select('id, token')
-      .single();
-
-    if (error) {
-      // 23P01 = חפיפה עם תור אחר, 23505 = אותה שעת התחלה
-      if (error.code === '23P01' || error.code === '23505') {
-        return NextResponse.json({ error: 'השעה הזו כבר תפוסה. אנא בחרו שעה אחרת.' }, { status: 409 });
+    // עסק עם צוות: התור משויך למטפל שעושה את השירות. בלי צוות, האתר עובד כמו תמיד.
+    const staff = await getActiveStaff(supabase, siteId);
+    let candidates: StaffRow[] | null = null;
+    if (staff.length > 0) {
+      candidates = staffForService(staff, service.trim());
+      if (typeof staffId === 'string' && staffId && staffId !== 'any') {
+        candidates = candidates.filter((s) => s.id === staffId);
       }
-      throw error;
+      if (candidates.length === 0) {
+        return NextResponse.json({ error: 'אין מטפל שעושה את השירות הזה. אנא בחרו שירות או מטפל אחר.' }, { status: 400 });
+      }
+      // "ללא העדפה": קודם המטפל עם הכי מעט תורים באותו יום, כדי לפזר את העבודה
+      if (candidates.length > 1) {
+        const { data: dayRows } = await supabase
+          .from('appointments')
+          .select('staff_id')
+          .in('staff_id', candidates.map((c) => c.id))
+          .gte('starts_at', `${date}T00:00:00`)
+          .lt('starts_at', `${date}T23:59:59`);
+        const load = new Map<string, number>();
+        for (const r of dayRows ?? []) load.set(r.staff_id, (load.get(r.staff_id) ?? 0) + 1);
+        candidates = [...candidates].sort((x, y) => (load.get(x.id) ?? 0) - (load.get(y.id) ?? 0));
+      }
     }
 
-    return NextResponse.json({ id: data.id, token: data.token, duration });
+    const base: Record<string, string> = {
+      site_id: siteId,
+      customer_name: name,
+      customer_phone: phone,
+      customer_user_id: user.id,
+      date: `${date} בשעה ${time} (${service.trim()})`,
+      slot_key: `${date} ${time}`,
+      starts_at: `${date}T${time}:00`,
+      ends_at: `${date}T${toTime(startMin + duration)}:00`,
+    };
+
+    // מנסים מטפל אחרי מטפל. אילוץ במסד מבטיח שאי אפשר לתפוס את אותה שעה אצל אותו מטפל פעמיים.
+    let data: { id: string; token: string } | null = null;
+    let chosen: StaffRow | null = null;
+    for (const candidate of candidates ?? [null]) {
+      const { data: row, error } = await supabase
+        .from('appointments')
+        .insert(candidate ? { ...base, staff_id: candidate.id } : base)
+        .select('id, token')
+        .single();
+      if (!error) {
+        data = row;
+        chosen = candidate;
+        break;
+      }
+      // 23P01 = חפיפה עם תור אחר, 23505 = אותה שעת התחלה: מנסים את המטפל הבא
+      if (error.code !== '23P01' && error.code !== '23505') throw error;
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: 'השעה הזו כבר תפוסה. אנא בחרו שעה אחרת.' }, { status: 409 });
+    }
+
+    return NextResponse.json({ id: data.id, token: data.token, duration, staffName: chosen?.name ?? null });
   } catch (err) {
     console.error('Book appointment error:', err);
     return NextResponse.json({ error: 'שגיאה בקביעת התור' }, { status: 500 });

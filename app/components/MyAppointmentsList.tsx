@@ -8,6 +8,7 @@ type Item = {
   token: string;
   siteId: string;
   businessName: string;
+  staffName?: string | null;
   date: string;
   reviewed: boolean;
   canCancel: boolean;
@@ -102,6 +103,7 @@ export default function MyAppointmentsList({ siteId, themeColor = '#2563eb' }: {
               <div>
                 {!siteId && <p className="text-sm text-gray-500">{item.businessName}</p>}
                 <p className="font-bold text-gray-900">{formatApiDate(item.date)}</p>
+                {item.staffName && <p className="text-sm text-gray-500">אצל {item.staffName}</p>}
               </div>
 
               {item.canCancel ? (

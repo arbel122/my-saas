@@ -7,6 +7,7 @@ import { supabase } from '@/app/utils/supabase';
 import { getAuthHeader } from '@/app/utils/auth-client';
 import ScheduleEditor from '@/app/components/ScheduleEditor';
 import CatalogEditor from '@/app/components/CatalogEditor';
+import ServiceWizard, { type NewService } from '@/app/components/ServiceWizard';
 import BookingModal from '@/app/components/BookingModal';
 import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule } from '@/app/utils/schedule';
 
@@ -59,6 +60,7 @@ export default function CreatePage() {
   const router = useRouter();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [showServiceWizard, setShowServiceWizard] = useState(false);
   const [isPro, setIsPro] = useState(false);
 
   // משתמש Pro לא צריך לשלם שוב, ולכן הכפתור שלו רק שומר.
@@ -328,6 +330,14 @@ export default function CreatePage() {
     const newData = { ...siteData, services: [...siteData.services, newService] };
     setSiteData(newData);
     localStorage.setItem('generatedSite', JSON.stringify(newData));
+  };
+
+  const addWizardService = (service: NewService) => {
+    if (!isEditing) return;
+    const newData = { ...siteData, services: [...siteData.services, service] };
+    setSiteData(newData);
+    localStorage.setItem('generatedSite', JSON.stringify(newData));
+    setShowServiceWizard(false);
   };
 
   const removeService = (index: number) => {
@@ -828,7 +838,10 @@ export default function CreatePage() {
               })}
             </div>
 
-            <div className="mt-16 text-center">
+            <div className="mt-16 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button onClick={() => setShowServiceWizard(true)} className="bg-blue-50 border-2 border-blue-200 text-blue-700 hover:bg-blue-100 font-bold py-5 px-10 rounded-full transition-all flex items-center gap-3 shadow-sm">
+                <span className="text-xl">✨</span><span>הוסף שירות עם AI</span>
+              </button>
               <button onClick={addService} className="bg-gray-50 border-2 border-dashed border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900 hover:bg-white font-bold py-5 px-10 rounded-full transition-all flex items-center gap-3 mx-auto shadow-sm hover:shadow-md">
                 <span className="text-xl">➕</span><span>הוסף שירות חדש</span>
               </button>
@@ -836,6 +849,10 @@ export default function CreatePage() {
           </div>
         </div>
 )}
+
+{showServiceWizard && (
+          <ServiceWizard businessName={siteData.businessName} industry={formData.industry} onAdd={addWizardService} onClose={() => setShowServiceWizard(false)} />
+        )}
 
 {/* === קטגוריות מוצרים === */}
         {(siteData.showProducts === true || (siteData.catalog || []).length > 0) && (

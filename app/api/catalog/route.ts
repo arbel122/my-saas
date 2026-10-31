@@ -46,6 +46,12 @@ async function askAiOnce(prompt: string): Promise<unknown> {
   return JSON.parse(cleanJson(data.choices?.[0]?.message?.content || ''));
 }
 
+const FALLBACK_SERVICE_QUESTIONS = [
+  'מה כלול בשירות הזה, ומה הלקוח מקבל?',
+  'כמה זמן לוקח השירות, ומה המחיר?',
+  'למי השירות מתאים, ויש משהו שחשוב שהלקוח ידע לפני כן?',
+];
+
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
 // שני שלבים: שאלות מותאמות לקטגוריה, ואז יצירת רשימת מוצרים מהתשובות של בעל העסק.
@@ -70,6 +76,64 @@ export async function POST(req: Request) {
     }
 
     const context = `העסק: ${businessName || 'לא צוין'}${industry ? ` (${industry})` : ''}. הקטגוריה: ${category}.`;
+
+    // אשף הוספת שירות: שאלות מותאמות לשירות, ואז יצירת שירות אחד מהתשובות (בלי להמציא מחיר)
+    if (action === 'service_questions') {
+      const serviceContext = `העסק: ${businessName || 'לא צוין'}${industry ? ` (${industry})` : ''}. השירות: ${category}.`;
+      try {
+        const result = (await askAi(`
+אתה עוזר לבעל עסק להוסיף שירות חדש לאתר שלו.
+${serviceContext}
+כתוב 3 עד 4 שאלות קצרות וממוקדות בעברית לבעל העסק, כדי לכתוב תיאור מדויק של השירות הספציפי הזה (מה כלול, משך, מחיר, למי מתאים, הכנה נדרשת, וכדומה). השאלות חייבות להתאים לשירות.
+אל תשתמש במרכאות כפולות בתוך הטקסט.
+החזר אך ורק JSON בצורה: {"questions": ["שאלה 1", "שאלה 2"]}
+`)) as { questions?: unknown };
+        const questions = Array.isArray(result.questions) ? result.questions.map((q) => text(q, 200)).filter(Boolean).slice(0, 4) : [];
+        return NextResponse.json({ questions: questions.length >= 2 ? questions : FALLBACK_SERVICE_QUESTIONS });
+      } catch (err) {
+        console.error('Service questions failed, using fallback questions:', err);
+        return NextResponse.json({ questions: FALLBACK_SERVICE_QUESTIONS });
+      }
+    }
+
+    if (action === 'service_generate') {
+      const rawAnswers: unknown[] = Array.isArray(body?.answers) ? body.answers.slice(0, 6) : [];
+      const answers = rawAnswers
+        .map((a) => {
+          const item = a as { question?: unknown; answer?: unknown };
+          return { question: text(item?.question, 200), answer: text(item?.answer, 1500) };
+        })
+        .filter((a) => a.answer);
+      if (answers.length === 0) {
+        return NextResponse.json({ error: 'נא לענות על שאלה אחת לפחות.' }, { status: 400 });
+      }
+      const qa = answers.map((a) => `שאלה: ${a.question}\nתשובה: ${a.answer}`).join('\n\n');
+      const result = (await askAi(`
+אתה עוזר לבעל עסק לכתוב שירות לאתר שלו.
+העסק: ${businessName || 'לא צוין'}${industry ? ` (${industry})` : ''}. שם השירות: ${category}.
+
+התשובות של בעל העסק:
+${qa}
+
+כתוב את השירות לפי המידע שנמסר בלבד.
+כללים חשובים:
+- אל תמציא מחיר, משך או פרטים שלא נמסרו. אם מחיר לא צוין, השאר את שדה המחיר ריק.
+- תיאור שיווקי קצר וברור (עד 220 תווים), בלי עובדות שלא נמסרו.
+- משך: מספר דקות בפורמט כמו 45 דקות. אם לא צוין, כתוב 60 דקות.
+- אל תשתמש במרכאות כפולות בתוך הטקסט.
+החזר אך ורק JSON בצורה: {"name": "שם השירות", "description": "תיאור", "price": "מחיר או ריק", "duration": "45 דקות"}
+`)) as { name?: unknown; description?: unknown; price?: unknown; duration?: unknown };
+
+      const duration = text(result.duration, 30);
+      return NextResponse.json({
+        service: {
+          name: text(result.name, 80) || category,
+          description: text(result.description, 260),
+          price: text(result.price, 30),
+          duration: /\d/.test(duration) ? duration : '60 דקות',
+        },
+      });
+    }
 
     if (action === 'questions') {
       try {

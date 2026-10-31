@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export type CatalogItem = { name: string; description?: string; price?: string };
+export type CatalogItem = { name: string; description?: string; price?: string; image?: string };
 export type CatalogCategory = { id: string; name: string; items: CatalogItem[] };
 
 type Props = {
@@ -54,6 +54,10 @@ export default function CatalogSection({ catalog, themeColor = '#2563eb', phone,
             <div className="grid sm:grid-cols-2 gap-5">
               {active.items.map((item, i) => (
                 <div key={i} className="border border-gray-100 rounded-2xl p-5 flex flex-col text-right shadow-sm">
+                  {item.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.image} alt={item.name} loading="lazy" className="w-full h-44 object-cover rounded-xl mb-3" />
+                  )}
                   <h4 className="text-lg font-bold text-gray-900">{item.name}</h4>
                   {item.description && <p className="text-gray-600 text-sm mt-2 flex-grow">{item.description}</p>}
                   <div className="mt-4 flex items-center justify-between gap-3">

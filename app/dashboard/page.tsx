@@ -6,12 +6,16 @@ import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
 import InstallAppButton from '../components/InstallAppButton';
 import ReminderButton from '../components/ReminderButton';
+import StaffManager, { type StaffMember } from '../components/StaffManager';
+import { getAuthHeader } from '../utils/auth-client';
 import { dayLabel, formatApptDate } from '../utils/reminders';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [sites, setSites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [staffSiteId, setStaffSiteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>('');
   const [isPro, setIsPro] = useState(false);
@@ -51,6 +55,17 @@ export default function DashboardPage() {
     cleanPaymentParamAndFetch();
   }, []);
 
+  // הצוות של העסקים (אם יש), להצגת שם המטפל ביומן ולניהול הצוות
+  const fetchStaff = async () => {
+    try {
+      const res = await fetch('/api/staff', { headers: { ...(await getAuthHeader()) } });
+      const data = await res.json().catch(() => ({}));
+      setStaffList(res.ok && Array.isArray(data.staff) ? data.staff : []);
+    } catch {
+      setStaffList([]);
+    }
+  };
+
   const fetchSitesAndAppointments = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -80,6 +95,7 @@ export default function DashboardPage() {
       const userSites = sitesData || [];
       setSites(userSites);
       fetchReviews();
+      fetchStaff();
 
       if (userSites.length > 0) {
         const siteIds = userSites.map((s: any) => s.id);
@@ -333,6 +349,21 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-lg">כאן תוכל לנהל את האתרים שלך ולעקוב אחר התורים של הלקוחות.</p>
         </header>
 
+        {staffSiteId && (() => {
+          const site = sites.find((x: any) => x.id === staffSiteId);
+          if (!site) return null;
+          return (
+            <StaffManager
+              siteId={site.id}
+              businessName={site.content?.businessName || site.name || 'העסק'}
+              serviceNames={(site.content?.services || []).map((v: any) => v.name).filter(Boolean)}
+              staff={staffList}
+              onRefresh={fetchStaff}
+              onClose={() => setStaffSiteId(null)}
+            />
+          );
+        })()}
+
         {/* --- איך נמצאים בגוגל --- */}
         {sites.some((s: any) => s.is_pro) && (
           <section className="mb-12 bg-blue-50 border border-blue-100 rounded-3xl p-6 md:p-8">
@@ -379,6 +410,7 @@ export default function DashboardPage() {
                       <th className="py-4 px-6">טלפון נייד</th>
                       <th className="py-4 px-6">מועד התור והשירות</th>
                       <th className="py-4 px-6">שייך לאתר</th>
+                      {staffList.length > 0 && <th className="py-4 px-6">מטפל</th>}
                       <th className="py-4 px-6">תזכורת</th>
                     </tr>
                   </thead>
@@ -402,6 +434,9 @@ export default function DashboardPage() {
                           <td className="py-4 px-6 text-gray-500">
                             {matchingSite?.name || 'אתר עסקי'}
                           </td>
+                          {staffList.length > 0 && (
+                            <td className="py-4 px-6 text-gray-700">{staffList.find((m) => m.id === appt.staff_id)?.name || '-'}</td>
+                          )}
                           <td className="py-4 px-6">
                             <ReminderButton appt={appt} businessName={matchingSite?.content?.businessName || matchingSite?.name || 'העסק'} />
                           </td>
@@ -555,6 +590,13 @@ export default function DashboardPage() {
                       צפה באתר
                     </Link>
                     
+                    <button
+                      onClick={() => setStaffSiteId(site.id)}
+                      className="px-4 flex justify-center items-center bg-white border border-gray-100 text-gray-700 rounded-xl hover:bg-blue-50 hover:text-blue-700 transition-all text-sm font-bold shadow-sm"
+                      title="ניהול צוות"
+                    >
+                      👥 צוות
+                    </button>
                     <button 
                       onClick={() => handleDelete(site.id)}
                       className="w-14 flex justify-center items-center bg-white border border-gray-100 text-gray-400 rounded-xl hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all text-lg shadow-sm"

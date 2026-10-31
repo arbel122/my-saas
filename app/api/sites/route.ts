@@ -40,6 +40,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'מזהה אתר לא תקין' }, { status: 400 });
     }
 
+    // תמונות מוצרים: רק מהאחסון שלנו (אחרת מסירים), כדי שאי אפשר יהיה לטעון תמונה מכתובת חיצונית שרירותית
+    const imagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/`;
+    if (Array.isArray(content.catalog)) {
+      for (const category of content.catalog) {
+        for (const item of Array.isArray(category?.items) ? category.items : []) {
+          if (item && typeof item.image === 'string' && !item.image.startsWith(imagePrefix)) delete item.image;
+        }
+      }
+    }
+
     const siteName =
       (typeof name === 'string' && name.trim().slice(0, 120)) ||
       (typeof content.businessName === 'string' && content.businessName.trim().slice(0, 120)) ||

@@ -53,7 +53,17 @@ export default function BookingModal({
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [booked, setBooked] = useState<{ token: string; service: string; date: string; time: string; name: string; phone: string } | null>(null);
+  const [booked, setBooked] = useState<{ token: string; service: string; date: string; time: string; name: string; phone: string; staffName: string | null } | null>(null);
+  // צוות: מטפלים שהצטרפו, ומי שנבחר (any = ללא העדפה)
+  const [staff, setStaff] = useState<Array<{ id: string; name: string; services: string[] }>>([]);
+  const [staffId, setStaffId] = useState('any');
+  useEffect(() => {
+    fetch(`/api/sites/${encodeURIComponent(siteId)}/staff`)
+      .then((r) => r.json())
+      .then((d) => setStaff(Array.isArray(d.staff) ? d.staff : []))
+      .catch(() => {});
+  }, [siteId]);
+  const serviceStaff = staff.filter((m) => m.services.includes(service));
 
   const today = israelNow().date;
 
@@ -64,7 +74,7 @@ export default function BookingModal({
   }, []);
   const loginHref = `/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`;
 
-  async function loadSlots(nextService: string, nextDate: string) {
+  async function loadSlots(nextService: string, nextDate: string, nextStaff: string = staffId) {
     setTime('');
     setSlots(null);
     setError('');
@@ -73,7 +83,7 @@ export default function BookingModal({
     setLoadingSlots(true);
     try {
       const res = await fetch(
-        `/api/availability?siteId=${encodeURIComponent(siteId)}&date=${nextDate}&service=${encodeURIComponent(nextService)}`
+        `/api/availability?siteId=${encodeURIComponent(siteId)}&date=${nextDate}&service=${encodeURIComponent(nextService)}&staffId=${encodeURIComponent(nextStaff)}`
       );
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -102,7 +112,7 @@ export default function BookingModal({
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
-        body: JSON.stringify({ siteId, service, date, time, customerName: name, customerPhone: phone }),
+        body: JSON.stringify({ siteId, service, date, time, customerName: name, customerPhone: phone, staffId }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -116,7 +126,7 @@ export default function BookingModal({
         if (res.status === 409) await loadSlots(service, date);
         return;
       }
-      setBooked({ token: data.token, service, date, time, name: name.trim(), phone: phone.trim() });
+      setBooked({ token: data.token, service, date, time, name: name.trim(), phone: phone.trim(), staffName: data.staffName ?? null });
     } catch {
       setError('שגיאה בקביעת התור. בדקו את החיבור ונסו שוב.');
     } finally {
@@ -151,7 +161,7 @@ export default function BookingModal({
             <div className="text-5xl">🎉</div>
             <h2 className="text-3xl font-black text-emerald-900">התור נשמר!</h2>
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-900 font-bold">
-              {booked.service}<br />
+              {booked.service}{booked.staffName ? ` אצל ${booked.staffName}` : ''}<br />
               {formatDate(booked.date)} בשעה {booked.time}
             </div>
 
@@ -207,7 +217,7 @@ export default function BookingModal({
                   <select
                     className="w-full p-4 rounded-xl border-2 bg-gray-50"
                     value={service}
-                    onChange={(e) => { setService(e.target.value); loadSlots(e.target.value, date); }}
+                    onChange={(e) => { setService(e.target.value); setStaffId('any'); loadSlots(e.target.value, date, 'any'); }}
                   >
                     <option value="" disabled>בחרו שירות...</option>
                     {services.map((s, i) => (
@@ -215,6 +225,24 @@ export default function BookingModal({
                     ))}
                   </select>
                 </div>
+                {service && serviceStaff.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">אצל מי?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[{ id: 'any', name: 'ללא העדפה' }, ...serviceStaff].map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => { setStaffId(m.id); loadSlots(service, date, m.id); }}
+                          className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${staffId === m.id ? 'text-white border-transparent' : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'}`}
+                          style={staffId === m.id ? { backgroundColor: themeColor } : undefined}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">תאריך</label>
                   <input

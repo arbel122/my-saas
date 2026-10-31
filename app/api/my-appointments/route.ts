@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const supabase = getSupabaseAdmin();
   let query = supabase
     .from('appointments')
-    .select('id, token, site_id, date, starts_at')
+    .select('*')
     .eq('customer_user_id', user.id)
     .order('starts_at', { ascending: false })
     .limit(100);
@@ -39,6 +39,14 @@ export async function GET(req: Request) {
     supabase.from('reviews').select('appointment_id').in('appointment_id', rows.map((r) => r.id)),
   ]);
 
+  // שמות המטפלים (אם יש צוות)
+  const staffIds = [...new Set(rows.map((r) => r.staff_id).filter(Boolean))];
+  const staffNames = new Map<string, string>();
+  if (staffIds.length > 0) {
+    const { data: staffRows } = await supabase.from('site_staff').select('id, name').in('id', staffIds);
+    for (const st of staffRows ?? []) staffNames.set(st.id, st.name);
+  }
+
   const businessNames = new Map<string, string>();
   for (const s of sites ?? []) {
     businessNames.set(s.id, s.content?.businessName || s.name || 'עסק');
@@ -52,6 +60,7 @@ export async function GET(req: Request) {
         token: r.token,
         siteId: r.site_id,
         businessName: businessNames.get(r.site_id) ?? 'עסק',
+        staffName: r.staff_id ? staffNames.get(r.staff_id) ?? null : null,
         date: r.date,
         reviewed: reviewed.has(r.id),
         canCancel: !started,
