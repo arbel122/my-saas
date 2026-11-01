@@ -56,7 +56,7 @@ export default function HomeNavActions() {
   return (
     <div className="flex items-center gap-4 dir-ltr">
       <Link
-        href="/login"
+        href="/login?mode=signup"
         className="bg-blue-600 hover:bg-blue-500 text-white rounded-full px-5 py-2 text-sm font-bold transition-all hover:scale-105 shadow-lg shadow-blue-500/20"
       >
         צור חשבון חינם

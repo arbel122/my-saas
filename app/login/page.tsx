@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { useRouter } from 'next/navigation';
 import Logo from '../components/Logo';
@@ -12,6 +12,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  // קישור "צור חשבון" מדף הבית פותח ישר את מצב ההרשמה
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'signup') setIsLogin(false);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
