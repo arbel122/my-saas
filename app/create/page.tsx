@@ -9,7 +9,7 @@ import ScheduleEditor from '@/app/components/ScheduleEditor';
 import CatalogEditor from '@/app/components/CatalogEditor';
 import ServiceWizard, { type NewService } from '@/app/components/ServiceWizard';
 import BookingModal from '@/app/components/BookingModal';
-import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule } from '@/app/utils/schedule';
+import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule, toMinutes, type Schedule } from '@/app/utils/schedule';
 
 export default function CreatePage() {
   const [formData, setFormData] = useState({
@@ -19,12 +19,13 @@ export default function CreatePage() {
     services: '',
     location: '',
     businessType: 'physical',
-    workingHours: 'ימים א\'-ה\': 09:00 - 19:00',
     // 'yes' / 'no' / '' (עוד לא נענה). חובה לענות על שתי השאלות לפני יצירת האתר.
     needsBooking: '',
     sellsProducts: '',
     productCategories: ''
   });
+
+  const [hours, setHours] = useState<Schedule>(DEFAULT_SCHEDULE);
 
   const [isLoading, setIsLoading] = useState(false);
   const [siteData, setSiteData] = useState<any>(null);
@@ -113,6 +114,11 @@ export default function CreatePage() {
       return;
     }
 
+    if (hours.days.length === 0 || toMinutes(hours.open) >= toMinutes(hours.close)) {
+      alert('אנא בחרו לפחות יום פעילות אחד, ושעת פתיחה שקודמת לשעת הסגירה.');
+      return;
+    }
+
     const wantsBooking = formData.needsBooking === 'yes';
     const sellsProducts = formData.sellsProducts === 'yes';
     // סעיף השירותים נחוץ כשיש תורים, או כשהעסק לא מוכר מוצרים. עסק של מוצרים בלבד מקבל קטגוריות במקומו.
@@ -133,10 +139,10 @@ export default function CreatePage() {
       שם העסק: ${formData.businessName}.
       תחום הפעילות: ${formData.industry}.
       סוג שירות: ${formData.businessType === 'physical' ? 'מקום פיזי (הלקוח מגיע לעסק)' : 'עד בית הלקוח'}.
-      שעות פעילות: ${formData.workingHours}.
+      שעות פעילות: ${formatSchedule(hours)}.
       היתרון המרכזי / למה לבחור בנו: ${formData.superpower}.
       ${showServices ? `שירותים עיקריים: ${formData.services}.` : 'העסק מוכר מוצרים בלבד ואין בו שירותים או תורים. כתוב את הטקסטים סביב המוצרים.'}
-      ${sellsProducts ? `העסק מוכר גם מוצרים בקטגוריות: ${formData.productCategories || 'לא צוין'}.` : ''}
+      ${sellsProducts ? `העסק מוכר גם מוצרים בקטגוריות: ${formData.productCategories || 'לא צוין'}. אלה מוצרים ולא שירותים, ולכן אל תכלול אותם ברשימת השירותים.` : ''}
       ${wantsBooking ? 'הלקוחות קובעים תור מראש.' : 'הלקוחות מגיעים או מזמינים בלי לקבוע תור, ולכן אל תכתוב על קביעת תור.'}
       אזור/כתובת מתן שירות: ${formData.location}.
     `;
@@ -160,8 +166,8 @@ export default function CreatePage() {
         location: data.site.location || formData.location,
         industry: formData.industry,
         businessType: formData.businessType,
-        workingHours: formatSchedule(DEFAULT_SCHEDULE),
-        schedule: DEFAULT_SCHEDULE,
+        workingHours: formatSchedule(hours),
+        schedule: hours,
         closures: [],
         bookingEnabled: wantsBooking,
         showServices,
@@ -997,6 +1003,33 @@ export default function CreatePage() {
               onChange={handleChange}
               className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1.5">באילו ימים ושעות העסק פתוח? *</label>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].map((label, d) => (
+                <button
+                  type="button"
+                  key={d}
+                  onClick={() => setHours((prev) => ({ ...prev, days: prev.days.includes(d) ? prev.days.filter((x) => x !== d) : [...prev.days, d].sort() }))}
+                  className={`px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all ${hours.days.includes(d) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-500 border-gray-200'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-600 mb-1">פתיחה</label>
+                <input type="time" value={hours.open} onChange={(e) => setHours((prev) => ({ ...prev, open: e.target.value }))} className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-gray-600 mb-1">סגירה</label>
+                <input type="time" value={hours.close} onChange={(e) => setHours((prev) => ({ ...prev, close: e.target.value }))} className="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-sm" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1.5">לקוחות יוכלו לקבוע תור רק בשעות האלה. אפשר לשנות אחר כך, וגם להוסיף סגירות חד-פעמיות.</p>
           </div>
 
           {(formData.needsBooking === 'yes' || formData.sellsProducts !== 'yes') && (

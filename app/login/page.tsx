@@ -12,7 +12,47 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [pending, setPending] = useState<{ email: string; password: string } | null>(null);
   const router = useRouter();
+
+  // חזרה לדף שממנו הגיעו (רק נתיב פנימי באתר, למניעת הפניה לאתר זר)
+  const goNext = () => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
+  };
+
+  // אחרי הרשמה: מחכים לאימות המייל, גם אם הקישור נפתח בדפדפן או במשתמש אחר, ואז מתחברים לבד
+  useEffect(() => {
+    if (!pending) return;
+    let done = false;
+    let last = 0;
+    const started = Date.now();
+    const check = async () => {
+      if (done || Date.now() - last < 4000) return;
+      last = Date.now();
+      const { error } = await supabase.auth.signInWithPassword(pending);
+      if (!error) {
+        done = true;
+        goNext();
+      } else if (Date.now() - started > 15 * 60 * 1000) {
+        done = true;
+        setPending(null);
+        setIsLogin(true);
+        setNotice('עבר זמן רב. אם אימתם את המייל, התחברו כאן.');
+      }
+    };
+    const timer = setInterval(check, 15000);
+    const onFocus = () => document.visibilityState === 'visible' && check();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      done = true;
+      clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
 
   // קישור "צור חשבון" מדף הבית פותח ישר את מצב ההרשמה
   useEffect(() => {
@@ -40,9 +80,7 @@ export default function LoginPage() {
         });
         if (error) throw error;
 
-        // חזרה לדף שממנו הגיעו (רק נתיב פנימי באתר, למניעת הפניה לאתר זר)
-        const next = new URLSearchParams(window.location.search).get('next');
-        router.push(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
+        goNext();
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -51,10 +89,7 @@ export default function LoginPage() {
         });
         if (error) throw error;
 
-        // הודעה מעודכנת שדורשת אימות במייל
-        alert('הרשמה בוצעה בהצלחה! ✉️ שלחנו לך קישור אימות לאימייל, אנא אמת את כתובת המייל שלך לפני ההתחברות.');
-        
-        setIsLogin(true);
+        setPending({ email, password });
       }
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'אירעה שגיאה. אנא נסה שוב.');
@@ -63,9 +98,38 @@ export default function LoginPage() {
     }
   };
 
+  if (pending) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
+        <div className="w-full max-w-md p-8 m-4 bg-white rounded-[2rem] shadow-xl border border-gray-100 text-center space-y-5">
+          <h1 className="flex justify-center pr-3">
+            <Logo size={48} tone="light" />
+          </h1>
+          <div className="text-5xl" aria-hidden="true">✉️</div>
+          <h2 className="text-2xl font-extrabold text-gray-900">שלחנו לכם מייל לאימות</h2>
+          <p className="text-gray-600">
+            שלחנו קישור אל <span className="font-bold text-gray-900" dir="ltr">{pending.email}</span>. פתחו אותו ולחצו על הקישור, באותו דפדפן או בכל מקום אחר.
+          </p>
+          <p className="text-sm text-gray-500">העמוד הזה ימשיך אוטומטית ברגע שהמייל יאומת, אין צורך לחזור ולהתחבר.</p>
+          <div className="flex items-center justify-center gap-3 text-sm font-bold text-blue-700">
+            <div className="w-5 h-5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            ממתינים לאימות...
+          </div>
+          <button
+            type="button"
+            onClick={() => { setPending(null); setIsLogin(true); }}
+            className="text-sm font-bold text-gray-500 underline py-2 px-1"
+          >
+            חזרה להתחברות
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden font-sans">
-      
+
       {/* רקע עם צורות מטושטשות סטייל SaaS */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob"></div>
       <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-blob animation-delay-2000"></div>
