@@ -1,0 +1,471 @@
+/* Hallmark · custom · idea: "a street of shopfronts: Opnyx shown as the real storefronts it builds" · vibe: "night street, loud type, direct, friendly" · ground: near-black navy oklch(0.16 0.04 265), the product's original dark ground, restored at the owner's request · ink: near-white · accent: blue oklch(0.52 0.22 262) for actions and the numerals · faces: Secular One display, Heebo body · hero: Settled, headline over the sentence and the actions, the three storefronts rising into the fold · copy: reworded (listed in the handoff) */
+/* waive: near-black ground with one blue accent is a Reflex default; kept because the owner asked for black and blue. Brand: the Opnyx wordmark and its blue and violet stay as the project has them (Logo.tsx). */
+
+.home {
+  /* h-sun = הרקע (שחור-כחול), h-ink = הטקסט (כמעט לבן): השמות נשארו מהגרסה הצהובה */
+  --h-sun: oklch(0.16 0.04 265);
+  --h-ink: oklch(0.96 0.01 260);
+  --h-ink-soft: oklch(0.76 0.03 260);
+  --h-paper: oklch(0.2 0.045 265);
+  --h-deep: oklch(0.12 0.03 265);
+  --h-blue: oklch(0.52 0.22 262);
+  --h-blue-hover: oklch(0.58 0.21 262);
+  --h-line: oklch(0.96 0.01 260 / 0.24);
+
+  --h-font-display: var(--font-display-he), 'Arial Hebrew', sans-serif;
+  --h-font-body: var(--font-body-he), 'Arial Hebrew', sans-serif;
+
+  --h-max: 1240px;
+  --h-gutter: clamp(1.1rem, 4vw, 3rem);
+  --h-radius: 10px;
+
+  background: var(--h-sun);
+  color: var(--h-ink);
+  font-family: var(--h-font-body);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+html:has(.home),
+body:has(.home) {
+  overflow-x: clip;
+}
+
+.home *,
+.home *::before,
+.home *::after {
+  box-sizing: border-box;
+}
+
+/* אנחנו מנטרלים את סגנונות הבסיס הכלליים של האתר (כותרות, פסקאות, סקשנים) בתוך הדף הזה */
+.home :where(h1, h2, h3) {
+  font-family: var(--h-font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--h-ink);
+  margin: 0;
+}
+.home :where(p) {
+  margin: 0;
+}
+.home :where(section) {
+  padding-block: 0;
+}
+
+.home :where(a) {
+  color: inherit;
+}
+.home a:focus-visible,
+.home button:focus-visible {
+  outline: 3px solid var(--h-ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.home-wrap {
+  width: 100%;
+  max-width: var(--h-max);
+  margin-inline: auto;
+  padding-inline: var(--h-gutter);
+}
+
+/* ---------- ניווט ---------- */
+.home-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1.4rem;
+}
+.home-nav__links {
+  display: none;
+  gap: 2rem;
+  font-weight: 500;
+  font-size: 1rem;
+}
+.home-nav__links a {
+  text-decoration: none;
+  padding-block: 0.4rem;
+  border-bottom: 2px solid transparent;
+}
+.home-nav__links a:hover {
+  border-bottom-color: var(--h-ink);
+}
+@media (min-width: 820px) {
+  .home-nav__links {
+    display: flex;
+  }
+}
+
+/* כפתורים */
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--h-font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  text-decoration: none;
+  padding: 0.7rem 1.4rem;
+  border-radius: var(--h-radius);
+  border: 2px solid var(--h-blue);
+  background: var(--h-blue);
+  color: oklch(0.99 0 0);
+  cursor: pointer;
+}
+.home-btn:hover {
+  background: var(--h-blue-hover);
+  border-color: var(--h-blue-hover);
+}
+.home-btn--lg {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+}
+.home-textlink {
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid var(--h-ink);
+  text-decoration: none;
+}
+.home-textlink:hover {
+  border-bottom-color: transparent;
+}
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.home-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+.home-nav-link {
+  font-weight: 500;
+  font-size: 1rem;
+  text-decoration: none;
+  padding: 0.4rem 0;
+  border-bottom: 2px solid transparent;
+}
+.home-nav-link:hover {
+  border-bottom-color: var(--h-ink);
+}
+@media (max-width: 639px) {
+  .home-nav-link--hide {
+    display: none;
+  }
+}
+
+/* ---------- פתיחה ---------- */
+.home-hero {
+  padding-top: clamp(2.5rem, 7vw, 5.5rem);
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+.home-hero h1 {
+  font-size: clamp(2.6rem, 8vw, 7rem);
+  line-height: 1;
+  max-width: 19ch;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.home-hero__sub {
+  margin-top: clamp(1.4rem, 3vw, 2.2rem);
+  max-width: 36rem;
+  font-size: clamp(1.1rem, 1.7vw, 1.3rem);
+  color: var(--h-ink-soft);
+}
+.home-hero .home-actions {
+  margin-top: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+/* ---------- רחוב החנויות (דוגמאות) ---------- */
+.home-street {
+  padding-bottom: clamp(3rem, 7vw, 6rem);
+}
+.home-street__grid {
+  display: grid;
+  gap: 2.2rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.home-street h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+}
+.home-street__lead {
+  margin-top: 1rem;
+  max-width: 24rem;
+  color: var(--h-ink-soft);
+}
+.home-street__row {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+.home-shop {
+  display: block;
+  text-decoration: none;
+  min-width: 0;
+}
+.home-shop__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 3px solid var(--h-blue);
+  border-radius: var(--h-radius);
+  background: var(--h-paper);
+}
+.home-shop h3 {
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+.home-shop p {
+  margin-top: 0.4rem;
+  font-size: 1rem;
+  color: var(--h-ink-soft);
+}
+.home-shop__go {
+  display: inline-block;
+  margin-top: 0.7rem;
+  font-weight: 700;
+  font-size: 1rem;
+  border-bottom: 2px solid var(--h-ink);
+}
+.home-shop:hover .home-shop__go {
+  border-bottom-color: transparent;
+}
+.home-shop:hover .home-shop__img {
+  border-color: var(--h-ink);
+}
+
+@media (min-width: 900px) {
+  .home-street__grid {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 2.7fr);
+    gap: 3rem;
+  }
+  .home-shop:nth-child(2) {
+    margin-top: 3.5rem;
+  }
+  .home-shop:nth-child(3) {
+    margin-top: 1.5rem;
+  }
+}
+@media (max-width: 899px) {
+  /* בנייד: גלילה אופקית עם הצמדה, כדי שכל תמונה תהיה גדולה */
+  .home-street__row {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1rem;
+    padding-bottom: 0.6rem;
+    margin-inline: calc(var(--h-gutter) * -1);
+    padding-inline: var(--h-gutter);
+  }
+  .home-shop {
+    flex: 0 0 min(78vw, 340px);
+    scroll-snap-align: start;
+  }
+}
+
+/* ---------- איך זה עובד ---------- */
+.home-how {
+  background: var(--h-paper);
+  padding-block: clamp(3.5rem, 8vw, 7rem);
+  scroll-margin-top: 0;
+}
+.home-how h2,
+.home-guide h2 {
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  line-height: 1.05;
+}
+.home-how__list {
+  list-style: none;
+  margin: clamp(2rem, 5vw, 3.5rem) 0 0;
+  padding: 0;
+}
+.home-how__item {
+  display: grid;
+  gap: 0.4rem 2rem;
+  grid-template-columns: minmax(0, 1fr);
+  padding-block: 1.6rem;
+  border-top: 2px solid var(--h-line);
+}
+.home-how__item:last-child {
+  border-bottom: 2px solid var(--h-line);
+}
+.home-how__item h3 {
+  font-size: clamp(2rem, 6vw, 4.6rem);
+  line-height: 1;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.home-how__item p {
+  max-width: 30rem;
+  color: var(--h-ink-soft);
+  font-size: 1.05rem;
+}
+.home-how__n {
+  font-family: var(--h-font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--h-blue-hover);
+}
+@media (min-width: 900px) {
+  .home-how__item {
+    grid-template-columns: 4rem minmax(0, 1.6fr) minmax(0, 1fr);
+    align-items: center;
+    padding-block: 2.2rem;
+  }
+}
+
+/* ---------- מדריך ---------- */
+.home-guide {
+  padding-block: clamp(3.5rem, 8vw, 7rem);
+  scroll-margin-top: 0;
+}
+.home-guide__grid {
+  display: grid;
+  gap: 2.5rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.home-guide__lead {
+  margin-top: 1rem;
+  max-width: 24rem;
+  color: var(--h-ink-soft);
+}
+.home-guide__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: step;
+}
+.home-step {
+  position: relative;
+  padding-block: 1.5rem;
+  padding-inline-start: 3.6rem;
+  border-top: 2px solid var(--h-line);
+  counter-increment: step;
+}
+.home-step:last-child {
+  border-bottom: 2px solid var(--h-line);
+}
+.home-step::before {
+  content: counter(step);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 1.35rem;
+  font-family: var(--h-font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--h-blue-hover);
+}
+.home-step h3 {
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+.home-step p {
+  margin-top: 0.5rem;
+  max-width: 38rem;
+  color: var(--h-ink-soft);
+  font-size: 1.05rem;
+}
+.home-step__price {
+  display: block;
+  margin-top: 1rem;
+  font-family: var(--h-font-display);
+  font-size: clamp(3.4rem, 8vw, 6rem);
+  line-height: 0.95;
+}
+.home-step__price .cur {
+  font-family: var(--h-font-body);
+  font-weight: 800;
+  margin-inline-start: 0.12em;
+}
+.home-step__price small {
+  font-family: var(--h-font-body);
+  font-weight: 500;
+  font-size: 1.1rem;
+  margin-inline-start: 0.6rem;
+}
+.home-tips {
+  margin-top: 2.5rem;
+  padding: 1.6rem clamp(1.2rem, 3vw, 2rem);
+  background: var(--h-blue);
+  color: oklch(0.99 0 0);
+  border-radius: var(--h-radius);
+}
+.home-tips h3 {
+  font-size: 1.5rem;
+  color: oklch(0.99 0 0);
+}
+.home-tips ul {
+  margin: 0.9rem 0 0;
+  padding-inline-start: 1.2rem;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 1.05rem;
+}
+.home-guide__cta {
+  margin-top: 2.5rem;
+}
+@media (min-width: 900px) {
+  .home-guide__grid {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 2.2fr);
+    gap: 3rem;
+  }
+  .home-guide__head {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+  }
+}
+
+/* ---------- פוטר ---------- */
+.home-footer {
+  background: var(--h-deep);
+  color: var(--h-ink-soft);
+  padding-block: 2.2rem;
+}
+.home-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  font-size: 1rem;
+}
+.home-footer a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.home-footer a:hover {
+  text-decoration: none;
+}
+.home-footer a {
+  color: var(--h-ink);
+}
+.home-footer__links {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home * {
+    scroll-behavior: auto !important;
+  }
+}
+html:has(.home) {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html:has(.home) {
+    scroll-behavior: auto;
+  }
+}

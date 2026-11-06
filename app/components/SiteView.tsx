@@ -138,7 +138,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
 
       {/* -------------------- תפריט ניווט -------------------- */}
       <header className="bg-white/95 backdrop-blur border-b border-gray-200 py-3.5 px-5 md:px-8 flex justify-between items-center sticky top-0 z-[100]">
-        <h1 className={`${look.heading} !text-2xl md:!text-2xl text-gray-900`}>{siteData.businessName || 'שם העסק'}</h1>
+        <h1 className={`${look.heading} !text-lg md:!text-2xl leading-tight text-gray-900`}>{siteData.businessName || 'שם העסק'}</h1>
 
         <div className="flex items-center gap-1 md:gap-3">
           {bookingEnabled && (
