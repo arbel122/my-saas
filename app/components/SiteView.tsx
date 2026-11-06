@@ -6,6 +6,7 @@ import ReviewsSection from './ReviewsSection';
 import BookingModal from './BookingModal';
 import CatalogSection from './CatalogSection';
 import MyAppointmentsModal from './MyAppointmentsModal';
+import '../site.css';
 import { CalendarIcon, ClockIcon, PhoneIcon, PinIcon, WhatsappIcon } from './SiteIcons';
 import { accessibleColor } from '../utils/color';
 import { SITE_BODY_FONT, siteLook, tintColor } from '../utils/site-theme';
@@ -77,7 +78,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
   };
 
   return (
-    <div dir="rtl" className={`min-h-screen bg-white relative ${SITE_BODY_FONT}`}>
+    <div dir="rtl" className={`site-scope min-h-screen bg-white relative ${SITE_BODY_FONT}`}>
       {demo && (
         <div className="bg-gray-900 text-white px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
           <span>זהו אתר דוגמה שנוצר ב-Opnyx.</span>
@@ -163,12 +164,6 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
           <img src={siteData.generatedImageUrl || `https://image.pollinations.ai/prompt/${siteData.imageKeywords || 'modern business'}?width=1920&height=1080&nologo=true`} alt="תמונת רקע" className="absolute inset-0 w-full h-full object-cover" />
           <div className={`absolute inset-0 ${centered ? 'bg-gradient-to-t from-black/75 via-black/25 to-black/5' : 'bg-gradient-to-l from-black/75 via-black/40 to-black/10'}`} />
           <div className={`relative z-10 w-full max-w-3xl p-6 md:p-12 flex flex-col ${centered ? 'items-center text-center mx-auto' : 'items-start text-right'}`}>
-            {siteData.industry && (
-              <p className="text-sm font-bold text-white/80 tracking-wide mb-3 flex items-center gap-2">
-                <span className="inline-block w-8 h-px bg-white/60" />
-                {siteData.industry}
-              </p>
-            )}
             <h2 className={`${look.heading} text-4xl md:text-6xl text-white leading-[1.1] !mt-0 !mb-0`}>{siteData.heroTitle}</h2>
             <p className="text-lg md:text-xl mt-5 text-white/90 max-w-xl leading-relaxed !mb-0">{siteData.heroSubtitle}</p>
             <div className={`mt-8 flex flex-wrap gap-3 ${centered ? 'justify-center' : ''}`}>
@@ -189,7 +184,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
       <section className="py-14 md:py-20 px-4" style={{ backgroundColor: tint }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-5 gap-10 md:gap-14 items-start">
           <div className="md:col-span-3">
-            <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-5`}>על העסק</h2>
+            <h2 className={`${look.heading} text-4xl md:text-5xl text-gray-900 !mt-0 !mb-5`}>על העסק</h2>
             <p className="text-lg text-gray-700 leading-8 whitespace-pre-wrap !mb-0">{siteData.aboutText}</p>
           </div>
           <div className={`md:col-span-2 bg-white border border-gray-200 p-6 space-y-5 ${look.card}`}>
@@ -232,36 +227,36 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
 
       {/* -------------------- שירותים -------------------- */}
       {siteData.showServices !== false && (
-        <section className="py-14 md:py-20 px-4 bg-white">
-          <div className="max-w-6xl mx-auto">
-            <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-10 ${centered ? 'text-center' : ''}`}>השירותים והמחירון</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="py-16 md:py-28 px-4 bg-white">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-10 md:gap-16 items-start">
+            <div className="md:col-span-4">
+              <h2 className={`${look.heading} text-4xl md:text-5xl text-gray-900 !mt-0 !mb-0 md:sticky md:top-28`}>השירותים והמחירון</h2>
+            </div>
+            <ul className="md:col-span-8 divide-y divide-gray-200 border-y border-gray-200">
               {siteData.services?.map((service: any, index: number) => (
-                <article key={index} className={`border border-gray-200 bg-white overflow-hidden flex flex-col h-full ${look.card}`}>
+                <li key={index} className="py-7 flex gap-5 md:gap-7 items-start">
                   {service.image && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={service.image} alt={service.name} loading="lazy" className="w-full h-48 object-cover" />
+                    <img src={service.image} alt={service.name} loading="lazy" className={`w-24 h-24 md:w-36 md:h-36 object-cover shrink-0 ${look.card}`} />
                   )}
-                  <div className="p-6 flex flex-col flex-grow">
-                    <h3 className={`${look.heading} text-xl text-gray-900 !mb-2`}>{service.name}</h3>
-                    <p className="text-gray-600 text-[15px] leading-relaxed flex-grow whitespace-pre-wrap !mb-0">{service.description}</p>
-                    <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
-                      <div>
-                        <span className="block text-xl font-extrabold" style={{ color: theme }}>{service.price}</span>
-                        {bookingEnabled && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-1"><ClockIcon className="w-3.5 h-3.5" />{service.duration || '60 דקות'}</span>
-                        )}
-                      </div>
-                      {bookingEnabled && (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <h3 className={`${look.heading} text-xl md:text-2xl text-gray-900 !m-0`}>{service.name}</h3>
+                      <span className="text-xl md:text-2xl font-extrabold whitespace-nowrap" style={{ color: theme }}>{service.price}</span>
+                    </div>
+                    <p className="text-gray-600 text-[15px] md:text-base leading-relaxed whitespace-pre-wrap !mt-2 !mb-0">{service.description}</p>
+                    {bookingEnabled && (
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <span className="text-sm text-gray-500 flex items-center gap-1.5"><ClockIcon className="w-4 h-4" />{service.duration || '60 דקות'}</span>
                         <button onClick={() => openBookingModal(service.name)} className={`px-5 py-2.5 font-bold text-sm text-white ${look.button}`} style={{ backgroundColor: theme }}>
                           קבעו תור
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                </article>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
       )}
@@ -313,9 +308,9 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
         <section className="py-14 px-4 border-t" style={{ backgroundColor: tint }}>
           <div className="max-w-5xl mx-auto">
             <h2 className={`${look.heading} text-3xl text-gray-900 !mt-0 !mb-8 ${centered ? 'text-center' : ''}`}>מה הלקוחות אומרים</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10">
               {DEMO_REVIEWS.map((r) => (
-                <div key={r.name} className={`bg-white p-6 border border-gray-200 text-right ${look.card}`}>
+                <div key={r.name} className="border-t border-gray-300 py-6 text-right">
                   <div className="text-amber-500 text-lg mb-2" aria-label={`${r.rating} כוכבים`}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
                   <p className="text-gray-700 mb-3">{r.comment}</p>
                   <p className="text-sm font-bold text-gray-500 !mb-0">{r.name}</p>
@@ -331,7 +326,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
       {/* -------------------- צור קשר -------------------- */}
       <section id="contact-section" className="py-16 md:py-24 px-4 bg-gray-900 text-white">
         <div className={`max-w-3xl mx-auto ${centered ? 'text-center' : ''}`}>
-          <h2 className={`${look.heading} text-3xl md:text-4xl !text-white !mt-0 !mb-4`}>דברו איתנו</h2>
+          <h2 className={`${look.heading} text-4xl md:text-5xl !text-white !mt-0 !mb-4`}>דברו איתנו</h2>
           <p className="text-gray-300 text-lg !mb-8">{siteData.contactText || 'נשמח לשמוע מכם.'}</p>
           <div className={`flex flex-col sm:flex-row gap-3 ${centered ? 'justify-center' : ''}`}>
             <a

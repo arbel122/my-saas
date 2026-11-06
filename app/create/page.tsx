@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { uploadSiteAssetWithError } from '@/app/utils/upload';
 import { ClockIcon, ImageIcon, PinIcon } from '@/app/components/SiteIcons';
 import { SITE_BODY_FONT, siteLook, tintColor } from '@/app/utils/site-theme';
+import '@/app/site.css';
 import { supabase } from '@/app/utils/supabase';
 import { getAuthHeader } from '@/app/utils/auth-client';
 import ScheduleEditor from '@/app/components/ScheduleEditor';
@@ -164,7 +165,7 @@ export default function CreatePage() {
         heroTitle: data.site.title,
         heroSubtitle: data.site.subtitle,
         generatedImageUrl: data.site.hero_image,
-        aboutText: data.site.aboutText || 'אנחנו כאן כדי לתת לכם את השירות הטוב ביותר.',
+        aboutText: data.site.aboutText || '',
         location: data.site.location || formData.location,
         industry: formData.industry,
         businessType: formData.businessType,
@@ -441,7 +442,7 @@ export default function CreatePage() {
     const centered = look.heroAlign === 'center';
 
     return (
-      <div dir="rtl" className={`min-h-screen ${SITE_BODY_FONT} bg-slate-50 relative pb-32 selection:bg-blue-100 selection:text-blue-900`}>
+      <div dir="rtl" className={`site-scope min-h-screen ${SITE_BODY_FONT} bg-slate-50 relative pb-32 selection:bg-blue-100 selection:text-blue-900`}>
 
         {/* === באנר מבצע עליון === */}
         {siteData.saleBannerActive && (
@@ -774,7 +775,7 @@ export default function CreatePage() {
         <section className="py-14 md:py-20 px-4" style={{ backgroundColor: tint }}>
           <div className="max-w-5xl mx-auto grid md:grid-cols-5 gap-10 md:gap-14 items-start">
             <div className="md:col-span-3">
-              <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-5`}>על העסק</h2>
+              <h2 className={`${look.heading} text-4xl md:text-5xl text-gray-900 !mt-0 !mb-5`}>על העסק</h2>
               <textarea
                 className="text-lg text-gray-700 w-full bg-transparent outline-none rounded-2xl p-3 -mr-3 transition-all resize-none hover:bg-white focus:bg-white focus:ring-4 focus:ring-gray-100 cursor-text leading-8"
                 value={siteData.aboutText}
@@ -814,93 +815,81 @@ export default function CreatePage() {
 
         {/* === שירותים ומחירון === */}
         {siteData.showServices !== false && (
-<div className="py-14 md:py-20 px-4 bg-white border-t border-gray-100">
-          <div className="max-w-6xl mx-auto">
-            <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-10 ${centered ? 'text-center' : ''}`}>השירותים והמחירון</h2>
+<div className="py-16 md:py-28 px-4 bg-white border-t border-gray-100">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-10 md:gap-16 items-start">
+            <div className="md:col-span-4 md:sticky md:top-28">
+              <h2 className={`${look.heading} text-4xl md:text-5xl text-gray-900 !mt-0 !mb-8`}>השירותים והמחירון</h2>
+              <div className="flex flex-col gap-3">
+                <button onClick={() => setShowServiceWizard(true)} className="bg-blue-50 border-2 border-blue-200 text-blue-700 hover:bg-blue-100 font-bold py-3.5 px-6 rounded-full transition-colors text-sm">
+                  הוסף שירות עם AI
+                </button>
+                <button onClick={addService} className="bg-white border-2 border-dashed border-gray-300 text-gray-600 hover:border-gray-500 hover:text-gray-900 font-bold py-3.5 px-6 rounded-full transition-colors text-sm">
+                  הוסף שירות חדש
+                </button>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <ul className="md:col-span-8 divide-y divide-gray-200 border-y border-gray-200">
               {siteData.services?.map((service: any, index: number) => {
                 const isServiceOnSale = siteData.saleBannerActive && siteData.saleConfig?.serviceIndex === index;
 
                 return (
-                  <div key={index} className={`bg-white border transition-all duration-300 relative group flex flex-col h-full ${look.card} ${isServiceOnSale ? 'border-red-300' : 'border-gray-200 hover:border-gray-300'}`}>
-
+                  <li key={index} className="group relative py-7 flex gap-5 md:gap-7 items-start">
                     {/* תמונת השירות */}
-                    <div className={`relative w-full overflow-hidden ${service.image ? 'h-48' : 'h-24 bg-gray-50 border-b border-dashed border-gray-200'} ${look.card} rounded-b-none`}>
+                    <div className={`relative shrink-0 overflow-hidden ${service.image ? 'w-24 h-24 md:w-36 md:h-36' : 'w-24 h-24 md:w-36 md:h-36 bg-gray-50 border border-dashed border-gray-300'} ${look.card}`}>
                       {service.image && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={service.image} alt={service.name} className="w-full h-full object-cover" />
                       )}
                       {isEditing && (
-                        <div className={`absolute inset-0 flex items-center justify-center gap-2 ${service.image ? 'opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity' : ''}`}>
-                          <label className="bg-white text-gray-800 hover:bg-gray-100 text-xs font-bold px-4 py-2 rounded-full shadow cursor-pointer flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4" />
-                            {uploadingKey === `service-${index}` ? 'מעלה...' : service.image ? 'החלפת תמונה' : 'הוספת תמונה לשירות'}
+                        <div className={`absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-1 text-center ${service.image ? 'opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity' : ''}`}>
+                          <label className="bg-white text-gray-800 hover:bg-gray-100 text-[11px] font-bold px-2.5 py-1.5 rounded-full shadow cursor-pointer flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            {uploadingKey === `service-${index}` ? 'מעלה...' : service.image ? 'החלפה' : 'הוספת תמונה'}
                             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingKey !== null} onChange={(e) => { uploadImageTo(`service-${index}`, e.target.files?.[0], (url) => updateService(index, 'image', url)); e.target.value = ''; }} />
                           </label>
                           {service.image && (
-                            <button type="button" onClick={() => updateService(index, 'image', '')} className="bg-white text-red-600 hover:bg-red-50 text-xs font-bold px-3 py-2 rounded-full shadow">הסרה</button>
+                            <button type="button" onClick={() => updateService(index, 'image', '')} className="bg-white text-red-600 hover:bg-red-50 text-[11px] font-bold px-2.5 py-1 rounded-full shadow">הסרה</button>
                           )}
                         </div>
                       )}
                     </div>
 
-                    {isServiceOnSale && (
-                      <div className="absolute -top-5 -right-5 bg-gradient-to-r from-red-600 to-orange-500 text-white font-extrabold px-6 py-2 rounded-full shadow-lg transform rotate-6 border-[3px] border-white z-10 text-lg">
-                        מבצע! 🎁
-                      </div>
-                    )}
-
-                    <div className="absolute top-3 left-3 z-20">
-                      <button onClick={() => removeService(index)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all shadow-sm">✖</button>
-                    </div>
-
-                    <div className="absolute top-3 right-3 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {index > 0 && <button onClick={() => moveService(index, 'up')} className="bg-gray-50 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 hover:text-gray-900 transition-all shadow-sm">⬆️</button>}
-                      {index < siteData.services.length - 1 && <button onClick={() => moveService(index, 'down')} className="bg-gray-50 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 hover:text-gray-900 transition-all shadow-sm">⬇️</button>}
-                    </div>
-
-                    <div className="p-6 flex flex-col flex-grow">
-                      <input className={`${look.heading} text-xl w-full bg-transparent outline-none rounded-lg p-1 -mr-1 mb-2 text-gray-900 hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors`} value={service.name} onChange={(e) => updateService(index, 'name', e.target.value)} />
-                      <textarea className="text-gray-600 w-full bg-transparent outline-none rounded-lg p-1 -mr-1 text-[15px] resize-none flex-grow hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors leading-relaxed" value={service.description} onChange={(e) => updateService(index, 'description', e.target.value)} rows={4} />
-
-                      <div className="mt-6 pt-4 border-t border-gray-100">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-4">
+                        <input className={`${look.heading} text-xl md:text-2xl flex-1 min-w-0 bg-transparent outline-none rounded-lg p-1 -mr-1 text-gray-900 hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors`} value={service.name} onChange={(e) => updateService(index, 'name', e.target.value)} />
                         {isServiceOnSale ? (
-                          <div className="flex items-center justify-between gap-3">
-                            <input
-                              className="text-gray-400 font-bold line-through decoration-red-500/70 decoration-2 bg-transparent outline-none hover:bg-gray-50 w-24 rounded"
-                              value={service.price}
-                              onChange={(e) => updateService(index, 'price', e.target.value)}
-                            />
-                            <span className="text-xl font-black text-red-600">{calculateDiscount(service.price, siteData.saleConfig.discountPercentage)}</span>
-                          </div>
+                          <span className="whitespace-nowrap text-xl md:text-2xl font-extrabold text-red-600">
+                            <span className="text-sm text-gray-400 line-through ml-2">{service.price}</span>
+                            {calculateDiscount(service.price, siteData.saleConfig.discountPercentage)}
+                          </span>
                         ) : (
                           <input
-                            className="w-full bg-transparent outline-none rounded-lg p-1 -mr-1 text-xl font-extrabold hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors"
+                            className="w-28 md:w-32 shrink-0 bg-transparent outline-none rounded-lg p-1 text-xl md:text-2xl font-extrabold text-left hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors"
                             style={{ color: siteData.themeColor }}
                             value={service.price}
                             onChange={(e) => updateService(index, 'price', e.target.value)}
                           />
                         )}
-                        <div className={`${siteData.bookingEnabled === false ? 'hidden' : 'flex'} items-center gap-1.5 text-xs text-gray-500 mt-1`}>
-                          <ClockIcon className="w-3.5 h-3.5" />
-                          <input className="bg-transparent outline-none w-24 text-gray-600 hover:bg-gray-50 focus:bg-gray-50 cursor-text rounded px-1 transition-colors" value={service.duration || '60 דקות'} onChange={(e) => updateService(index, 'duration', e.target.value)} />
-                        </div>
+                      </div>
+                      <textarea className="mt-1 text-gray-600 w-full bg-transparent outline-none rounded-lg p-1 -mr-1 text-[15px] md:text-base resize-none hover:bg-gray-50 focus:bg-gray-50 cursor-text transition-colors leading-relaxed" value={service.description} onChange={(e) => updateService(index, 'description', e.target.value)} rows={2} />
+                      <div className={`${siteData.bookingEnabled === false ? 'hidden' : 'flex'} items-center gap-1.5 text-sm text-gray-500 mt-2`}>
+                        <ClockIcon className="w-4 h-4" />
+                        <input className="bg-transparent outline-none w-28 text-gray-600 hover:bg-gray-50 focus:bg-gray-50 cursor-text rounded px-1 transition-colors" value={service.duration || '60 דקות'} onChange={(e) => updateService(index, 'duration', e.target.value)} />
                       </div>
                     </div>
-                  </div>
+
+                    {isEditing && (
+                      <div className="absolute top-2 left-0 flex gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        {index > 0 && <button onClick={() => moveService(index, 'up')} aria-label="העבר למעלה" className="bg-gray-100 text-gray-600 w-8 h-8 rounded-full hover:bg-gray-200">↑</button>}
+                        {index < siteData.services.length - 1 && <button onClick={() => moveService(index, 'down')} aria-label="העבר למטה" className="bg-gray-100 text-gray-600 w-8 h-8 rounded-full hover:bg-gray-200">↓</button>}
+                        <button onClick={() => removeService(index)} aria-label="מחיקת שירות" className="bg-red-50 text-red-500 w-8 h-8 rounded-full hover:bg-red-500 hover:text-white">✖</button>
+                      </div>
+                    )}
+                  </li>
                 );
               })}
-            </div>
-
-            <div className="mt-16 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button onClick={() => setShowServiceWizard(true)} className="bg-blue-50 border-2 border-blue-200 text-blue-700 hover:bg-blue-100 font-bold py-5 px-10 rounded-full transition-all flex items-center gap-3 shadow-sm">
-                <span className="text-xl">✨</span><span>הוסף שירות עם AI</span>
-              </button>
-              <button onClick={addService} className="bg-gray-50 border-2 border-dashed border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900 hover:bg-white font-bold py-5 px-10 rounded-full transition-all flex items-center gap-3 mx-auto shadow-sm hover:shadow-md">
-                <span className="text-xl">➕</span><span>הוסף שירות חדש</span>
-              </button>
-            </div>
+            </ul>
           </div>
         </div>
 )}

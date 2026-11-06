@@ -52,7 +52,7 @@ export default function ReviewsSection({ siteId, headingClass = "", cardClass = 
     <section className="py-14 md:py-20 bg-slate-50 border-t border-slate-100" dir="rtl" style={background ? { backgroundColor: background } : undefined}>
       <div className="max-w-5xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className={`${headingClass} text-3xl md:text-4xl text-slate-900 !mt-0 !mb-2`}>מה הלקוחות שלנו אומרים</h2>
+          <h2 className={`${headingClass} text-4xl md:text-5xl text-slate-900 !mt-0 !mb-2`}>מה הלקוחות שלנו אומרים</h2>
           <div className="flex items-center justify-center gap-2">
             <span className="text-2xl font-bold text-slate-800">{averageRating}</span>
             <div className="flex text-amber-400 text-xl" aria-label={`דירוג ממוצע ${averageRating} מתוך 5`}>
@@ -62,11 +62,11 @@ export default function ReviewsSection({ siteId, headingClass = "", cardClass = 
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-x-14">
           {reviews.map((review) => (
             <div
               key={review.id}
-              className={`bg-white p-6 border border-slate-200 flex flex-col justify-between space-y-4 ${cardClass}`}
+              className="border-t border-slate-300 py-7 flex flex-col justify-between space-y-4"
             >
               <div>
                 <div className="flex items-center justify-between mb-3">

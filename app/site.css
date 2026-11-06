@@ -1,0 +1,28 @@
+/* Hallmark · custom · idea: "a price list a neighbour would trust: the services as a menu, not a card grid" · vibe: "plain, specific, local" · ground: white and a tint of the owner's brand colour · ink: near-black gray · accent: the owner's brand colour · faces: per trade (see utils/site-theme.ts), Heebo body · hero: Settled, photo with text over it, actions below */
+/* waive: none. Colour comes from the owner's chosen brand colour, so it is set inline per site rather than declared here. */
+
+/* מראה משותף לאתרי העסקים (האתר הציבורי והעורך) */
+html:has(.site-scope),
+body:has(.site-scope) {
+  overflow-x: clip;
+}
+
+.site-scope :where(h1, h2, h3) {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* כל פקד מקבל טבעת מיקוד ברורה, מיד */
+.site-scope :where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-scope * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

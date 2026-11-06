@@ -40,7 +40,7 @@ export default function CatalogSection({ catalog, themeColor = '#2563eb', phone,
   return (
     <section className="py-14 md:py-20 px-4 bg-white border-t" dir="rtl" style={background ? { backgroundColor: background } : undefined}>
       <div className="max-w-5xl mx-auto text-center">
-        <h2 className={`${headingClass} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-8`}>{title}</h2>
+        <h2 className={`${headingClass} text-4xl md:text-5xl text-gray-900 !mt-0 !mb-8`}>{title}</h2>
         <div className="flex flex-wrap justify-center gap-3">
           {categories.map((c) => (
             <button
