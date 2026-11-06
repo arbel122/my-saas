@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ReviewsSection from './ReviewsSection';
 import BookingModal from './BookingModal';
 import CatalogSection from './CatalogSection';
 import MyAppointmentsModal from './MyAppointmentsModal';
+import { CalendarIcon, ClockIcon, PhoneIcon, PinIcon, WhatsappIcon } from './SiteIcons';
 import { accessibleColor } from '../utils/color';
+import { SITE_BODY_FONT, siteLook, tintColor } from '../utils/site-theme';
+import { getVisitSource, trackSiteEvent } from '../utils/source';
 import type { StaffCatalog } from '../utils/staff';
 
 type Props = {
@@ -37,6 +40,20 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
 
   const bookingEnabled = siteData.bookingEnabled !== false;
   const theme = accessibleColor(siteData.themeColor);
+  const look = siteLook(siteData);
+  const tint = tintColor(theme, look.tint);
+  const waDigits = (siteData.contactPhone || '').replace(/\D/g, '');
+  const waLink = !demo && waDigits ? `https://wa.me/${waDigits.startsWith('0') ? `972${waDigits.slice(1)}` : waDigits}` : '';
+  const isPhysical = siteData.businessType === 'physical';
+  const centered = look.heroAlign === 'center';
+
+  // קובעים את מקור ההגעה בכניסה (לפני שהכתובת משתנה), ורושמים לחיצות על וואטסאפ וטלפון
+  useEffect(() => {
+    if (!demo) getVisitSource();
+  }, [demo]);
+  const track = (type: 'whatsapp' | 'phone') => {
+    if (!demo && !isPreview) trackSiteEvent(siteId, type);
+  };
 
   const scrollToContact = () => {
     document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -60,7 +77,7 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
   };
 
   return (
-    <div dir="rtl" className="min-h-screen font-sans bg-white relative">
+    <div dir="rtl" className={`min-h-screen bg-white relative ${SITE_BODY_FONT}`}>
       {demo && (
         <div className="bg-gray-900 text-white px-4 py-3 flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
           <span>זהו אתר דוגמה שנוצר ב-Opnyx.</span>
@@ -120,77 +137,133 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
       )}
 
       {/* -------------------- תפריט ניווט -------------------- */}
-      <header className={`bg-white shadow-md py-4 px-6 flex justify-between items-center sticky top-0 z-[100]`}>
-        <h1 className="text-2xl font-black text-gray-800">{siteData.businessName || 'שם העסק'}</h1>
+      <header className="bg-white/95 backdrop-blur border-b border-gray-200 py-3.5 px-5 md:px-8 flex justify-between items-center sticky top-0 z-[100]">
+        <h1 className={`${look.heading} !text-2xl md:!text-2xl text-gray-900`}>{siteData.businessName || 'שם העסק'}</h1>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1 md:gap-3">
           {bookingEnabled && (
-            <>
-              <button onClick={openMyAppointmentsModal} className="text-sm text-gray-600 hover:text-gray-900 font-bold px-3 py-2.5 transition-colors">
-                התורים שלי
-              </button>
-              <button onClick={() => openBookingModal()} className="hidden md:block bg-gray-100 text-gray-800 px-5 py-2.5 rounded-full font-bold shadow-sm">
-                קביעת תור
-              </button>
-            </>
+            <button onClick={openMyAppointmentsModal} className="text-sm text-gray-600 hover:text-gray-900 font-medium px-3 py-2.5 transition-colors">
+              התורים שלי
+            </button>
           )}
-          <button onClick={scrollToContact} className="text-white px-6 py-2.5 rounded-full font-bold shadow-md" style={{ backgroundColor: theme }}>
+          {bookingEnabled && (
+            <button onClick={() => openBookingModal()} className={`hidden md:inline-flex items-center gap-2 text-white px-5 py-2.5 font-bold text-sm ${look.button}`} style={{ backgroundColor: theme }}>
+              <CalendarIcon className="w-4 h-4" /> קביעת תור
+            </button>
+          )}
+          <button onClick={scrollToContact} className={`px-5 py-2.5 font-bold text-sm border border-gray-300 text-gray-800 hover:bg-gray-50 ${look.button}`}>
             צור קשר
           </button>
         </div>
       </header>
 
-      {/* אזור ראשי - Hero */}
-      <div className="pt-8 pb-20 px-4 max-w-6xl mx-auto">
-        <div className="relative w-full h-[400px] md:h-[550px] overflow-hidden rounded-[2rem] shadow-2xl bg-gray-900 flex flex-col justify-center items-center">
-          <img src={siteData.generatedImageUrl || `https://image.pollinations.ai/prompt/${siteData.imageKeywords || 'modern business'}?width=1920&height=1080&nologo=true`} alt="תמונת רקע" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-          <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center px-4">
-            <h2 className="text-5xl font-extrabold text-white drop-shadow-lg">{siteData.heroTitle}</h2>
-            <p className="text-xl mt-6 text-gray-100 drop-shadow-md">{siteData.heroSubtitle}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="py-20 px-4 max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">על העסק</h2>
-        <p className="text-lg text-gray-600 whitespace-pre-wrap">{siteData.aboutText}</p>
-        {siteData.location && (
-          <p className="mt-6 text-gray-700 font-bold">📍 {siteData.businessType === 'mobile' ? 'אזורי שירות' : 'כתובת'}: <span className="font-normal">{siteData.location}</span></p>
-        )}
-        {siteData.workingHours && (
-          <p className="mt-6 text-gray-700 font-bold">⏰ שעות פעילות: <span className="font-normal">{siteData.workingHours}</span></p>
-        )}
-      </div>
-
-      {siteData.showServices !== false && (
-        <div className="py-20 px-4 bg-gray-50 border-t">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">השירותים שלנו</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {siteData.services?.map((service: any, index: number) => (
-                <div key={index} className="bg-white p-8 rounded-2xl shadow-sm border flex flex-col h-full hover:shadow-md">
-                  <h3 className="text-xl font-bold text-gray-800 text-center md:text-right mb-3">{service.name}</h3>
-                  <p className="text-gray-600 text-center md:text-right flex-grow mb-6 whitespace-pre-wrap">{service.description}</p>
-                  <div className="mt-auto text-center border-t pt-4">
-                    {bookingEnabled ? (
-                      <>
-                        <div className="text-sm text-gray-500 mb-3 font-medium">⏱️ זמן משוער: {service.duration || '60 דקות'}</div>
-                        <button onClick={() => openBookingModal(service.name)} className="inline-block px-6 py-3 rounded-full font-bold text-white w-full max-w-[250px] shadow-sm" style={{ backgroundColor: theme }}>
-                          {service.price}
-                        </button>
-                      </>
-                    ) : (
-                      <div className="inline-block px-6 py-3 rounded-full font-bold text-white w-full max-w-[250px] shadow-sm" style={{ backgroundColor: theme }}>
-                        {service.price}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+      {/* -------------------- פתיחה -------------------- */}
+      <div className="pt-6 pb-14 px-4 max-w-6xl mx-auto">
+        <div className={`relative w-full h-[420px] md:h-[560px] overflow-hidden bg-gray-900 flex flex-col justify-end ${look.hero}`}>
+          <img src={siteData.generatedImageUrl || `https://image.pollinations.ai/prompt/${siteData.imageKeywords || 'modern business'}?width=1920&height=1080&nologo=true`} alt="תמונת רקע" className="absolute inset-0 w-full h-full object-cover" />
+          <div className={`absolute inset-0 ${centered ? 'bg-gradient-to-t from-black/75 via-black/25 to-black/5' : 'bg-gradient-to-l from-black/75 via-black/40 to-black/10'}`} />
+          <div className={`relative z-10 w-full max-w-3xl p-6 md:p-12 flex flex-col ${centered ? 'items-center text-center mx-auto' : 'items-start text-right'}`}>
+            {siteData.industry && (
+              <p className="text-sm font-bold text-white/80 tracking-wide mb-3 flex items-center gap-2">
+                <span className="inline-block w-8 h-px bg-white/60" />
+                {siteData.industry}
+              </p>
+            )}
+            <h2 className={`${look.heading} text-4xl md:text-6xl text-white leading-[1.1] !mt-0 !mb-0`}>{siteData.heroTitle}</h2>
+            <p className="text-lg md:text-xl mt-5 text-white/90 max-w-xl leading-relaxed !mb-0">{siteData.heroSubtitle}</p>
+            <div className={`mt-8 flex flex-wrap gap-3 ${centered ? 'justify-center' : ''}`}>
+              {bookingEnabled && (
+                <button onClick={() => openBookingModal()} className={`px-7 py-3.5 font-bold text-white ${look.button}`} style={{ backgroundColor: theme }}>
+                  קביעת תור
+                </button>
+              )}
+              <button onClick={scrollToContact} className={`px-7 py-3.5 font-bold text-white border border-white/70 hover:bg-white/10 ${look.button}`}>
+                דברו איתנו
+              </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* -------------------- על העסק -------------------- */}
+      <section className="py-14 md:py-20 px-4" style={{ backgroundColor: tint }}>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-5 gap-10 md:gap-14 items-start">
+          <div className="md:col-span-3">
+            <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-5`}>על העסק</h2>
+            <p className="text-lg text-gray-700 leading-8 whitespace-pre-wrap !mb-0">{siteData.aboutText}</p>
+          </div>
+          <div className={`md:col-span-2 bg-white border border-gray-200 p-6 space-y-5 ${look.card}`}>
+            {siteData.workingHours && (
+              <div className="flex gap-3">
+                <ClockIcon className="w-5 h-5 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900 !mb-0.5">שעות פעילות</p>
+                  <p className="text-gray-600 text-sm !mb-0">{siteData.workingHours}</p>
+                </div>
+              </div>
+            )}
+            {siteData.location && (
+              <div className="flex gap-3">
+                <PinIcon className="w-5 h-5 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900 !mb-0.5">{isPhysical ? 'כתובת' : 'אזורי שירות'}</p>
+                  <p className="text-gray-600 text-sm !mb-2">{siteData.location}</p>
+                  {isPhysical && (
+                    <div className="flex flex-wrap gap-2">
+                      <a href={`https://waze.com/ul?q=${encodeURIComponent(siteData.location)}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-full">Waze</a>
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(siteData.location)}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-full">Google Maps</a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {siteData.contactPhone && !demo && (
+              <div className="flex gap-3">
+                <PhoneIcon className="w-5 h-5 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900 !mb-0.5">טלפון</p>
+                  <a href={`tel:${siteData.contactPhone}`} onClick={() => track('phone')} dir="ltr" className="text-gray-600 text-sm hover:underline">{siteData.contactPhone}</a>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* -------------------- שירותים -------------------- */}
+      {siteData.showServices !== false && (
+        <section className="py-14 md:py-20 px-4 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <h2 className={`${look.heading} text-3xl md:text-4xl text-gray-900 !mt-0 !mb-10 ${centered ? 'text-center' : ''}`}>השירותים והמחירון</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {siteData.services?.map((service: any, index: number) => (
+                <article key={index} className={`border border-gray-200 bg-white overflow-hidden flex flex-col h-full ${look.card}`}>
+                  {service.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={service.image} alt={service.name} loading="lazy" className="w-full h-48 object-cover" />
+                  )}
+                  <div className="p-6 flex flex-col flex-grow">
+                    <h3 className={`${look.heading} text-xl text-gray-900 !mb-2`}>{service.name}</h3>
+                    <p className="text-gray-600 text-[15px] leading-relaxed flex-grow whitespace-pre-wrap !mb-0">{service.description}</p>
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="block text-xl font-extrabold" style={{ color: theme }}>{service.price}</span>
+                        {bookingEnabled && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-1"><ClockIcon className="w-3.5 h-3.5" />{service.duration || '60 דקות'}</span>
+                        )}
+                      </div>
+                      {bookingEnabled && (
+                        <button onClick={() => openBookingModal(service.name)} className={`px-5 py-2.5 font-bold text-sm text-white ${look.button}`} style={{ backgroundColor: theme }}>
+                          קבעו תור
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
 
       <CatalogSection
@@ -198,6 +271,11 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
         themeColor={theme}
         phone={siteData.contactPhone}
         businessName={siteData.businessName}
+        headingClass={look.heading}
+        cardClass={look.card}
+        buttonClass={look.button}
+        background={tint}
+        onWhatsapp={() => track('whatsapp')}
       />
 
       {staffCatalogs.map((member) => (
@@ -209,15 +287,20 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
           businessName={siteData.businessName}
           title={`המוצרים של ${member.name}`}
           contextName={member.name}
+          headingClass={look.heading}
+          cardClass={look.card}
+          buttonClass={look.button}
+          background={tint}
+          onWhatsapp={() => track('whatsapp')}
         />
       ))}
 
       {bookingEnabled && (
         <div className="py-10 px-4 text-center bg-white border-t border-gray-100">
-          <p className="text-gray-600 mb-3">כבר קבעתם תור אצלנו? אפשר לבטל לפני התור, ולכתוב ביקורת אחריו.</p>
+          <p className="text-gray-600 mb-3 !mb-3">כבר קבעתם תור אצלנו? אפשר לבטל לפני התור, ולכתוב ביקורת אחריו.</p>
           <button
             onClick={openMyAppointmentsModal}
-            className="px-8 py-3 rounded-full font-bold text-white shadow-md hover:opacity-90"
+            className={`px-7 py-3 font-bold text-white hover:opacity-90 ${look.button}`}
             style={{ backgroundColor: theme }}
           >
             התורים שלי: ביטול וביקורת
@@ -225,44 +308,51 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
         </div>
       )}
 
-      {/* -------------------- אזור הצגת ביקורות -------------------- */}
+      {/* -------------------- ביקורות -------------------- */}
       {demo ? (
-        <div className="py-16 px-4 bg-gray-50 border-t">
-          <div className="max-w-5xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8">מה הלקוחות אומרים</h2>
+        <section className="py-14 px-4 border-t" style={{ backgroundColor: tint }}>
+          <div className="max-w-5xl mx-auto">
+            <h2 className={`${look.heading} text-3xl text-gray-900 !mt-0 !mb-8 ${centered ? 'text-center' : ''}`}>מה הלקוחות אומרים</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {DEMO_REVIEWS.map((r) => (
-                <div key={r.name} className="bg-white p-6 rounded-2xl shadow-sm border text-right">
-                  <div className="text-yellow-400 text-xl mb-2">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
+                <div key={r.name} className={`bg-white p-6 border border-gray-200 text-right ${look.card}`}>
+                  <div className="text-amber-500 text-lg mb-2" aria-label={`${r.rating} כוכבים`}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
                   <p className="text-gray-700 mb-3">{r.comment}</p>
-                  <p className="text-sm font-bold text-gray-500">{r.name}</p>
+                  <p className="text-sm font-bold text-gray-500 !mb-0">{r.name}</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
       ) : (
-        <ReviewsSection siteId={siteId} />
+        <ReviewsSection siteId={siteId} headingClass={look.heading} cardClass={look.card} background={tint} googleReviewUrl={siteData.googleReviewUrl} />
       )}
 
-      {/* -------------------- אזור צור קשר -------------------- */}
-      <div id="contact-section" className="py-24 px-4 bg-white border-t border-gray-100">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl font-bold text-gray-800 mb-8">דברו איתנו</h2>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+      {/* -------------------- צור קשר -------------------- */}
+      <section id="contact-section" className="py-16 md:py-24 px-4 bg-gray-900 text-white">
+        <div className={`max-w-3xl mx-auto ${centered ? 'text-center' : ''}`}>
+          <h2 className={`${look.heading} text-3xl md:text-4xl !text-white !mt-0 !mb-4`}>דברו איתנו</h2>
+          <p className="text-gray-300 text-lg !mb-8">{siteData.contactText || 'נשמח לשמוע מכם.'}</p>
+          <div className={`flex flex-col sm:flex-row gap-3 ${centered ? 'justify-center' : ''}`}>
             <a
-              href={!demo && siteData.contactPhone ? `https://wa.me/972${siteData.contactPhone.replace(/^0/, '')}` : '#'}
-              target={!demo && siteData.contactPhone ? '_blank' : '_self'}
-              onClick={demo ? (e) => { e.preventDefault(); setShowDemoNotice(true); } : undefined}
-              className="inline-flex items-center justify-center gap-3 bg-[#15803d] text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-[#166534] shadow-lg w-full md:w-auto"
+              href={waLink || '#'}
+              target={waLink ? '_blank' : '_self'}
+              rel="noopener noreferrer"
+              onClick={demo ? (e) => { e.preventDefault(); setShowDemoNotice(true); } : () => track('whatsapp')}
+              className={`inline-flex items-center justify-center gap-2.5 bg-[#15803d] hover:bg-[#166534] text-white px-8 py-4 font-bold text-lg ${look.button}`}
             >
-              <span>וואטסאפ לבעל העסק</span><span className="text-2xl">💬</span>
+              <WhatsappIcon className="w-5 h-5" /> וואטסאפ לבעל העסק
             </a>
+            {siteData.contactPhone && !demo && (
+              <a href={`tel:${siteData.contactPhone}`} onClick={() => track('phone')} className={`inline-flex items-center justify-center gap-2.5 border border-white/40 hover:bg-white/10 text-white px-8 py-4 font-bold text-lg ${look.button}`}>
+                <PhoneIcon className="w-5 h-5" /> התקשרו
+              </a>
+            )}
           </div>
         </div>
-      </div>
+      </section>
 
-      <footer className="pt-6 pb-24 px-4 text-center text-xs text-gray-500 border-t border-gray-100 bg-white">
+      <footer className="pt-6 pb-28 md:pb-10 px-4 text-center text-xs text-gray-500 border-t border-gray-100 bg-white">
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           <Link href="/privacy" className="underline hover:text-gray-800 py-1">מדיניות פרטיות</Link>
           <Link href="/terms" className="underline hover:text-gray-800 py-1">תקנון</Link>
@@ -270,6 +360,22 @@ export default function SiteView({ siteData, siteId, isPreview = false, demo = f
           <span>נבנה ב-<Link href="/" className="underline hover:text-gray-800">Opnyx</Link></span>
         </div>
       </footer>
+
+      {/* -------------------- סרגל פעולה צמוד בנייד -------------------- */}
+      {(bookingEnabled || waLink) && (
+        <div className="md:hidden fixed bottom-0 inset-x-0 z-[150] bg-white/95 backdrop-blur border-t border-gray-200 p-3 flex gap-3">
+          {bookingEnabled && (
+            <button onClick={() => openBookingModal()} className={`flex-1 py-3 font-bold text-white flex items-center justify-center gap-2 ${look.button}`} style={{ backgroundColor: theme }}>
+              <CalendarIcon className="w-4 h-4" /> קביעת תור
+            </button>
+          )}
+          {waLink && (
+            <a href={waLink} onClick={() => track('whatsapp')} target="_blank" rel="noopener noreferrer" className={`flex-1 py-3 font-bold text-white bg-[#15803d] flex items-center justify-center gap-2 ${look.button}`}>
+              <WhatsappIcon className="w-4 h-4" /> וואטסאפ
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

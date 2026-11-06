@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { israelNow } from '@/app/utils/schedule';
 import { getAuthHeader } from '@/app/utils/auth-client';
+import { getVisitSource } from '@/app/utils/source';
 
 type Service = { name: string; duration?: string; price?: string };
 
@@ -112,7 +113,7 @@ export default function BookingModal({
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
-        body: JSON.stringify({ siteId, service, date, time, customerName: name, customerPhone: phone, staffId }),
+        body: JSON.stringify({ siteId, service, date, time, customerName: name, customerPhone: phone, staffId, source: getVisitSource() }),
       });
       const data = await res.json().catch(() => ({}));
 

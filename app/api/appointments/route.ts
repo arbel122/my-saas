@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 import { UUID_RE, getUserFromRequest } from '@/app/utils/auth';
 import { getClientIp, isRateLimited } from '@/app/utils/rate-limit';
+import { cleanSource } from '@/app/utils/source';
 import { getActiveStaff, staffForService, type StaffRow } from '@/app/utils/staff';
 import {
   generateSlots,
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => null);
-    const { siteId, service, date, time, customerName, customerPhone, staffId } = body ?? {};
+    const { siteId, service, date, time, customerName, customerPhone, staffId, source } = body ?? {};
 
     if (typeof siteId !== 'string' || !UUID_RE.test(siteId)) {
       return NextResponse.json({ error: 'אתר לא תקין' }, { status: 400 });
@@ -147,6 +148,10 @@ export async function POST(req: Request) {
     if (!data) {
       return NextResponse.json({ error: 'השעה הזו כבר תפוסה. אנא בחרו שעה אחרת.' }, { status: 409 });
     }
+
+    // מקור ההגעה לסטטיסטיקות. אם העמודה עוד לא קיימת (SQL לא הורץ), מתעלמים בשקט.
+    const cleanSrc = cleanSource(source);
+    if (cleanSrc) await supabase.from('appointments').update({ source: cleanSrc }).eq('id', data.id);
 
     return NextResponse.json({ id: data.id, token: data.token, duration, staffName: chosen?.name ?? null });
   } catch (err) {

@@ -6,6 +6,8 @@ import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
 import InstallAppButton from '../components/InstallAppButton';
 import ReminderButton from '../components/ReminderButton';
+import AppointmentsCalendar from '../components/AppointmentsCalendar';
+import SiteStats from '../components/SiteStats';
 import StaffManager, { type StaffMember } from '../components/StaffManager';
 import { getAuthHeader } from '../utils/auth-client';
 import { dayLabel, formatApptDate } from '../utils/reminders';
@@ -14,6 +16,9 @@ import { useRouter } from 'next/navigation';
 export default function DashboardPage() {
   const [sites, setSites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  // כל התורים (גם שעברו החודש), ליומן השבועי. הטבלה מציגה רק תורים עתידיים.
+  const [allAppointments, setAllAppointments] = useState<any[]>([]);
+  const [apptView, setApptView] = useState<'week' | 'list'>('week');
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [staffSiteId, setStaffSiteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +130,7 @@ export default function DashboardPage() {
         });
 
         setAppointments(validAppointments);
+        setAllAppointments(apptsData || []);
       }
     } catch (error: any) {
       alert('שגיאה בשליפת הנתונים: ' + error.message);
@@ -142,6 +148,7 @@ export default function DashboardPage() {
       
       setSites(sites.filter(site => site.id !== id));
       setAppointments(appointments.filter(appt => appt.site_id !== id));
+      setAllAppointments(allAppointments.filter(appt => appt.site_id !== id));
     } catch (error: any) {
       alert('שגיאה במחיקת האתר: ' + error.message);
     }
@@ -384,6 +391,8 @@ export default function DashboardPage() {
           </section>
         )}
 
+        {isPro && <SiteStats />}
+
         {/* --- אזור יומן התורים --- */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
@@ -391,12 +400,24 @@ export default function DashboardPage() {
               <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">יומן תורים 📅</h2>
               <p className="text-gray-500 text-sm mt-1">כל הלקוחות שקבעו תורים אצל העסקים שלך</p>
             </div>
-            <span className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full font-bold text-sm border border-blue-100">
-              סה"כ: {appointments.length} תורים
-            </span>
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-full p-1">
+              {([['week', 'יומן שבועי'], ['list', `רשימה (${appointments.length})`]] as const).map(([key, label]) => (
+                <button key={key} onClick={() => setApptView(key)} className={`px-4 py-1.5 rounded-full text-sm font-bold ${apptView === key ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>{label}</button>
+              ))}
+            </div>
           </div>
 
-          {appointments.length === 0 ? (
+          {apptView === 'week' ? (
+            <AppointmentsCalendar
+              appointments={allAppointments}
+              sites={sites}
+              staff={staffList}
+              onCancelled={(id) => {
+                setAppointments((prev) => prev.filter((a) => a.id !== id));
+                setAllAppointments((prev) => prev.filter((a) => a.id !== id));
+              }}
+            />
+          ) : appointments.length === 0 ? (
             <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center text-gray-400 shadow-sm">
               אין תורים להצגה כרגע (או שכל התורים עברו). ברגע שמישהו יקבע תור עתידי, הוא יופיע כאן מיד!
             </div>

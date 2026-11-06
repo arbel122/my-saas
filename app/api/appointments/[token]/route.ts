@@ -35,7 +35,7 @@ export async function GET(req: Request, { params }: Ctx) {
 
   const supabase = getSupabaseAdmin();
   const [{ data: site }, { data: review }] = await Promise.all([
-    supabase.from('sites').select('name').eq('id', appointment.site_id).maybeSingle(),
+    supabase.from('sites').select('name, content').eq('id', appointment.site_id).maybeSingle(),
     supabase.from('reviews').select('id').eq('appointment_id', appointment.id).limit(1),
   ]);
 
@@ -43,6 +43,8 @@ export async function GET(req: Request, { params }: Ctx) {
     customerName: appointment.customer_name,
     date: appointment.date,
     siteName: site?.name ?? null,
+    // קישור לביקורת בגוגל, אם בעל העסק הגדיר (נבדק ונשמר רק לכתובות גוגל)
+    googleReviewUrl: typeof site?.content?.googleReviewUrl === 'string' ? site.content.googleReviewUrl : null,
     reviewed: !!review && review.length > 0,
     // ביקורת אפשרית רק אחרי שהתור התקיים, וביטול רק לפניו
     canReview: hasStarted(appointment.starts_at),

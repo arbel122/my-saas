@@ -8,6 +8,7 @@ type AppointmentInfo = {
   customerName: string;
   date: string;
   siteName: string | null;
+  googleReviewUrl?: string | null;
   reviewed: boolean;
   canReview: boolean;
 };
@@ -145,6 +146,16 @@ export default function ReviewPage() {
               ? 'הדירוג והתגובה שלך נשמרו בהצלחה ועוזרים לנו להשתפר.'
               : 'תודה! אפשר להשאיר ביקורת אחת לכל תור.'}
           </p>
+          {isSubmitted && rating >= 4 && appointment.googleReviewUrl && (
+            <a
+              href={appointment.googleReviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all mb-3"
+            >
+              שמחים שנהניתם! אפשר לכתוב גם בגוגל
+            </a>
+          )}
           <button
             onClick={() => router.push('/')}
             className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-black transition-all"

@@ -50,6 +50,25 @@ export async function POST(req: Request) {
       }
     }
 
+    // תמונות שירותים: גם הן רק מהאחסון שלנו
+    if (Array.isArray(content.services)) {
+      for (const service of content.services) {
+        if (service && typeof service.image === 'string' && !service.image.startsWith(imagePrefix)) delete service.image;
+      }
+    }
+
+    // קישור לביקורת בגוגל: רק כתובת https של גוגל, כדי שלא יהיה אפשר להפנות גולשים לאתר זר
+    if (content.googleReviewUrl !== undefined) {
+      let ok = false;
+      try {
+        const url = new URL(String(content.googleReviewUrl));
+        ok = url.protocol === 'https:' && /(^|\.)(google\.com|g\.page|goo\.gl|g\.co)$/.test(url.hostname);
+      } catch {
+        ok = false;
+      }
+      if (!ok) delete content.googleReviewUrl;
+    }
+
     const siteName =
       (typeof name === 'string' && name.trim().slice(0, 120)) ||
       (typeof content.businessName === 'string' && content.businessName.trim().slice(0, 120)) ||
