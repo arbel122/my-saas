@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isRateLimited } from '@/app/utils/rate-limit';
 import { getUserFromRequest } from '@/app/utils/auth';
+import { aiJson } from '@/app/utils/ai';
 
 const FALLBACK_QUESTIONS = [
   'אילו מוצרים, דגמים או מותגים אתם מוכרים בקטגוריה הזו?',
@@ -27,23 +28,7 @@ async function askAi(prompt: string): Promise<unknown> {
 }
 
 async function askAiOnce(prompt: string): Promise<unknown> {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash-lite',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2500,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-    }),
-  });
-  if (!res.ok) throw new Error('AI request failed');
-  const data = await res.json();
-  return JSON.parse(cleanJson(data.choices?.[0]?.message?.content || ''));
+  return JSON.parse(cleanJson(await aiJson(prompt, { maxTokens: 2500, temperature: 0.4 })));
 }
 
 const FALLBACK_SERVICE_QUESTIONS = [

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isRateLimited } from "@/app/utils/rate-limit";
 import { getUserFromRequest } from "@/app/utils/auth";
+import { aiJson } from "@/app/utils/ai";
 
 function cleanJsonResponse(rawText: string) {
   let cleaned = rawText.trim();
@@ -72,25 +73,7 @@ export async function POST(req: Request) {
 }
 `;
 
-    const textResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite", 
-        messages: [{ role: "user", content: systemPrompt }],
-        max_tokens: 2000,
-        temperature: 0.7,
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!textResponse.ok) throw new Error("שגיאה מ-Gemini.");
-    
-    const aiData = await textResponse.json();
-    const rawContent = aiData.choices?.[0]?.message?.content || "";
+    const rawContent = await aiJson(systemPrompt, { maxTokens: 2000, temperature: 0.7 });
     
     // מנגנון הגנה נגד שגיאות בקריאת ה-JSON
     let parsedData;
