@@ -12,6 +12,7 @@ import ScheduleEditor from '@/app/components/ScheduleEditor';
 import CatalogEditor from '@/app/components/CatalogEditor';
 import ServiceWizard, { type NewService } from '@/app/components/ServiceWizard';
 import BookingModal from '@/app/components/BookingModal';
+import ServicePricesStep, { type PriceRow } from '@/app/components/ServicePricesStep';
 import { DEFAULT_SCHEDULE, formatSchedule, getClosures, getSchedule, toMinutes, type Schedule } from '@/app/utils/schedule';
 
 export default function CreatePage() {
@@ -106,7 +107,33 @@ export default function CreatePage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleGenerate = async (e?: React.FormEvent) => {
+  // שלב המחירים: אחרי השאלות, ה-AI מציע שירותים (או לוקח את מה שהוקלד), ובעל העסק קובע כמה הוא לוקח על כל אחד
+  const [priceRows, setPriceRows] = useState<PriceRow[] | null>(null);
+
+  const startPriceStep = async () => {
+    setIsLoading(true);
+    let names = formData.services.split(/[,\n،]/).map((name) => name.trim()).filter(Boolean).slice(0, 8);
+    if (names.length === 0) {
+      try {
+        const res = await fetch('/api/generate-site', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+          body: JSON.stringify({
+            action: 'suggest_services',
+            businessDescription: `שם העסק: ${formData.businessName}. תחום הפעילות: ${formData.industry}. מיקום: ${formData.location}.`,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(data.services)) names = data.services;
+      } catch {
+        // בלי הצעות ממשיכים עם שורה ריקה, ובעל העסק כותב בעצמו
+      }
+    }
+    setPriceRows((names.length ? names : ['']).map((name) => ({ name, price: '' })));
+    setIsLoading(false);
+  };
+
+  const handleGenerate = async (e?: React.FormEvent, ownerServices?: PriceRow[]) => {
     if (e) e.preventDefault();
     if (!formData.businessName || !formData.industry) {
       alert('אנא מלאו את שם העסק ותחום הפעילות');
@@ -126,6 +153,12 @@ export default function CreatePage() {
     const sellsProducts = formData.sellsProducts === 'yes';
     // סעיף השירותים נחוץ כשיש תורים, או כשהעסק לא מוכר מוצרים. עסק של מוצרים בלבד מקבל קטגוריות במקומו.
     const showServices = wantsBooking || !sellsProducts;
+
+    // קודם קובעים מחירים: ה-AI לא ממציא מחירים לשירותים
+    if (showServices && !ownerServices) {
+      await startPriceStep();
+      return;
+    }
 
     const productCategories = sellsProducts
       ? formData.productCategories
@@ -154,7 +187,7 @@ export default function CreatePage() {
       const res = await fetch('/api/generate-site', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
-        body: JSON.stringify({ businessDescription: combinedDescription })
+        body: JSON.stringify({ businessDescription: combinedDescription, services: ownerServices })
       });
 
       const data = await res.json();
@@ -190,8 +223,10 @@ export default function CreatePage() {
       setSiteData(newSiteData);
       setIsEditing(true);
       localStorage.setItem('generatedSite', JSON.stringify(newSiteData));
+      return true;
     } catch (error: any) {
       alert(error.message);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -1129,6 +1164,20 @@ export default function CreatePage() {
             )}
           </button>
         </form>
+
+        {priceRows && (
+          <ServicePricesStep
+            rows={priceRows}
+            busy={isLoading}
+            onChange={setPriceRows}
+            onBack={() => setPriceRows(null)}
+            onConfirm={async () => {
+              const rows = priceRows.filter((row) => row.name.trim());
+              // אם היצירה נכשלה, החלון נשאר פתוח כדי שאפשר יהיה לנסות שוב בלי להקליד מחדש
+              if (await handleGenerate(undefined, rows)) setPriceRows(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
