@@ -3,7 +3,7 @@ import { siteOrigin } from './utils/public-site';
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: [{ userAgent: '*', allow: '/', disallow: ['/api/', '/dashboard', '/create', '/checkout', '/login', '/my-appointments', '/review/'] }],
+    rules: [{ userAgent: '*', allow: '/', disallow: ['/api/', '/dashboard', '/create', '/checkout', '/login', '/my-appointments', '/review/', '/reset-password'] }],
     sitemap: `${siteOrigin()}/sitemap.xml`,
   };
 }

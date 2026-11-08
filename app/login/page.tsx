@@ -107,14 +107,7 @@ export default function LoginPage() {
 
   if (forgot) {
     return (
-      <ForgotPassword
-        initialEmail={email}
-        onBack={() => setForgot(false)}
-        onDone={() => {
-          setForgot(false);
-          goNext();
-        }}
-      />
+      <ForgotPassword initialEmail={email} onBack={() => setForgot(false)} />
     );
   }
 
