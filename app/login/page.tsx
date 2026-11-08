@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { useRouter } from 'next/navigation';
 import Logo from '../components/Logo';
+import PasswordField from '../components/PasswordField';
+import ForgotPassword from '../components/ForgotPassword';
+import { PASSWORD_RULE_TEXT, passwordProblem } from '../utils/password';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState<{ email: string; password: string } | null>(null);
+  const [forgot, setForgot] = useState(false);
   const router = useRouter();
 
   // חזרה לדף שממנו הגיעו (רק נתיב פנימי באתר, למניעת הפניה לאתר זר)
@@ -82,6 +86,9 @@ export default function LoginPage() {
 
         goNext();
       } else {
+        const problem = passwordProblem(password);
+        if (problem) throw new Error(problem);
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -97,6 +104,19 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (forgot) {
+    return (
+      <ForgotPassword
+        initialEmail={email}
+        onBack={() => setForgot(false)}
+        onDone={() => {
+          setForgot(false);
+          goNext();
+        }}
+      />
+    );
+  }
 
   if (pending) {
     return (
@@ -176,16 +196,22 @@ export default function LoginPage() {
           </div>
           
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">סיסמה</label>
-            <input
-              type="password"
-              required
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-              placeholder="••••••••"
+            <PasswordField
+              label="סיסמה"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              dir="ltr"
+              onChange={setPassword}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
+              hint={isLogin ? undefined : PASSWORD_RULE_TEXT}
             />
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => { setError(''); setForgot(true); }}
+                className="mt-2 text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline py-1"
+              >
+                שכחתי סיסמה
+              </button>
+            )}
           </div>
 
           <button
