@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../utils/supabase';
 import { PASSWORD_RULE_TEXT, passwordProblem } from '../utils/password';
-import Logo from '../components/Logo';
+import AuthShell from '../components/AuthShell';
 import PasswordField from '../components/PasswordField';
 
 type State = 'checking' | 'ready' | 'invalid';
@@ -62,49 +62,40 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50 font-sans">
-      <div className="w-full max-w-md p-8 m-4 bg-white rounded-[2rem] shadow-xl border border-gray-100 space-y-6">
-        <h1 className="flex justify-center pr-3">
-          <Logo size={48} tone="light" />
-        </h1>
-
-        {state === 'checking' && (
-          <p className="text-center text-gray-600 font-bold" role="status">בודקים את הקישור...</p>
-        )}
-
-        {state === 'invalid' && (
-          <div className="space-y-5 text-center">
-            <h2 className="text-2xl font-extrabold text-gray-900">הקישור לא תקף</h2>
-            <p className="text-gray-600 text-sm">ייתכן שהוא פג תוקף או שכבר נעשה בו שימוש. אפשר לבקש קישור חדש.</p>
-            <Link href="/login" className="block w-full py-4 px-6 bg-gray-900 text-white rounded-xl font-bold text-lg hover:bg-black transition-colors">
-              חזרה להתחברות
-            </Link>
+    <AuthShell>
+      {state === 'checking' && (
+        <div>
+          <h1>בודקים את הקישור</h1>
+          <div className="auth-wait" role="status">
+            <span className="ui-spin ui-spin--blue" aria-hidden="true" />
+            רגע אחד...
           </div>
-        )}
+        </div>
+      )}
 
-        {state === 'ready' && (
-          <form onSubmit={save} className="space-y-5">
-            <div className="text-center">
-              <h2 className="text-2xl font-extrabold text-gray-900">בחרו סיסמה חדשה</h2>
-              <p className="text-gray-600 mt-2 text-sm">אחרי השמירה תיכנסו לחשבון.</p>
-            </div>
-            {error && (
-              <div role="alert" className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm font-bold text-center">
-                {error}
-              </div>
-            )}
-            <PasswordField label="סיסמה חדשה" value={password} onChange={setPassword} autoComplete="new-password" hint={PASSWORD_RULE_TEXT} />
-            <PasswordField label="אימות סיסמה" value={confirm} onChange={setConfirm} autoComplete="new-password" />
-            <button
-              type="submit"
-              disabled={busy}
-              className="w-full py-4 px-6 bg-gray-900 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? 'שומר...' : 'החלפת סיסמה'}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+      {state === 'invalid' && (
+        <div>
+          <h1>הקישור לא תקף</h1>
+          <p className="auth-sub">ייתכן שהוא פג תוקף או שכבר נעשה בו שימוש. אפשר לבקש קישור חדש.</p>
+          <Link href="/login" className="ui-btn ui-btn--lg ui-btn--block">
+            חזרה להתחברות
+          </Link>
+        </div>
+      )}
+
+      {state === 'ready' && (
+        <form onSubmit={save}>
+          <h1>בחרו סיסמה חדשה</h1>
+          <p className="auth-sub">אחרי השמירה תיכנסו לחשבון.</p>
+          {error && <div role="alert" className="ui-alert ui-alert--error">{error}</div>}
+          <PasswordField label="סיסמה חדשה" value={password} onChange={setPassword} autoComplete="new-password" hint={PASSWORD_RULE_TEXT} />
+          <PasswordField label="אימות סיסמה" value={confirm} onChange={setConfirm} autoComplete="new-password" />
+          <button type="submit" disabled={busy} className="ui-btn ui-btn--lg ui-btn--block auth-submit">
+            {busy ? <span className="ui-spin" aria-hidden="true" /> : null}
+            {busy ? 'שומר...' : 'החלפת סיסמה'}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

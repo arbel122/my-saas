@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import '../ui.css';
 
 const PRO_FEATURES: Array<{ title: string; text: string }> = [
   { title: 'האתר באוויר, עם כתובת קריאה', text: 'כתובת קצרה לפי שם העסק והעיר, לשליחה ללקוחות, לביו באינסטגרם ולסטטוס בוואטסאפ.' },
@@ -15,12 +16,30 @@ const PRO_FEATURES: Array<{ title: string; text: string }> = [
   { title: 'תמיכה בוואטסאפ', text: 'שואלים ומקבלים עזרה מאיתנו עם האתר.' },
 ];
 
+const FREE_ON = ['יצירת אתר בעזרת AI בכמה שניות', 'עריכת טקסטים, מחירים, צבעים ושעות פעילות', 'שמירת האתר כטיוטה, בלי הגבלת זמן'];
+const FREE_OFF = ['האתר לא גלוי ללקוחות ולא באוויר', 'בלי קביעת תורים, ביקורות וסטטיסטיקות'];
+
 const FAQ: Array<{ q: string; a: string }> = [
   { q: 'צריך לשלם כדי לנסות?', a: 'לא. אפשר ליצור ולערוך את האתר בחינם. תשלום נדרש רק כשמפרסמים.' },
   { q: 'אפשר לבטל?', a: 'כן, בכל רגע, מהדשבורד או מחשבון ה-PayPal. האתר נשאר באוויר עד סוף התקופה ששולמה.' },
   { q: 'מה קורה לאתר אחרי ביטול?', a: 'הוא יורד מהאוויר, אבל האתר והנתונים שלכם נשמרים. אפשר לחדש את המנוי ולהעלות אותו שוב.' },
   { q: 'איך משלמים?', a: 'בתשלום מאובטח דרך PayPal, 29 ₪ בחודש.' },
 ];
+
+function Check() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4.5 12.5l5 5 10-11" />
+    </svg>
+  );
+}
+function Dash() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 12h12" />
+    </svg>
+  );
+}
 
 export default function PricingPage() {
   const router = useRouter();
@@ -32,121 +51,83 @@ export default function PricingPage() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-slate-50 font-sans pb-24">
-      {/* תפריט ניווט עליון חזר לדשבורד */}
-      <nav className="p-6">
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="text-gray-500 hover:text-gray-900 transition font-medium flex items-center gap-2"
-        >
-          <span>→</span>
-          חזרה לדשבורד
-        </button>
-      </nav>
+    <div dir="rtl" className="ui price">
+      <div className="price-wrap">
+        <nav className="price-top" aria-label="ניווט">
+          <button type="button" onClick={() => router.push('/dashboard')} className="ui-link">
+            חזרה לדשבורד
+          </button>
+        </nav>
 
-      <div className="max-w-7xl mx-auto px-6 pt-10">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tight">
-            שדרג את העסק שלך ל-<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Pro</span>
+        <header className="price-head">
+          <h1>
+            שדרג את העסק שלך ל-<em>Pro</em>
           </h1>
-          <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-            אתר שמקבל תורים, ביקורות ופניות במקום אחד, ב-29 ₪ בלבד לחודש.
-          </p>
-          <p className="text-sm text-gray-500 max-w-xl mx-auto mt-3">
-            אם תור אחד אצלכם שווה יותר מ-29 ₪, מספיק תור אחד נוסף בחודש שמגיע דרך האתר כדי שהמנוי ישתלם.
-          </p>
-        </div>
+          <p>אתר שמקבל תורים, ביקורות ופניות במקום אחד, ב-29 ₪ בלבד לחודש.</p>
+          <p className="price-roi">אם תור אחד אצלכם שווה יותר מ-29 ₪, מספיק תור אחד נוסף בחודש שמגיע דרך האתר כדי שהמנוי ישתלם.</p>
+        </header>
 
-        <div className="flex flex-col md:flex-row gap-8 max-w-5xl mx-auto justify-center items-center md:items-stretch">
-
-          {/* כרטיס חינם */}
-          <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm w-full max-w-md flex flex-col">
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">מסלול בסיסי</h3>
-            <p className="text-gray-500 mb-6">לבנות, לערוך ולראות איך האתר ייראה</p>
-            <div className="mb-8">
-              <span className="text-5xl font-black text-gray-900">0₪</span>
-              <span className="text-gray-500 font-medium"> / לחודש</span>
-            </div>
-
-            <ul className="space-y-4 mb-8 flex-grow">
-              <li className="flex items-center gap-3 text-gray-700">
-                <span className="text-green-500">✓</span> יצירת אתר בעזרת AI בכמה שניות
-              </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <span className="text-green-500">✓</span> עריכת טקסטים, מחירים, צבעים ושעות פעילות
-              </li>
-              <li className="flex items-center gap-3 text-gray-700">
-                <span className="text-green-500">✓</span> שמירת האתר כטיוטה, בלי הגבלת זמן
-              </li>
-              <li className="flex items-center gap-3 text-gray-500">
-                <span className="text-gray-500">✖</span> האתר לא גלוי ללקוחות ולא באוויר
-              </li>
-              <li className="flex items-center gap-3 text-gray-500">
-                <span className="text-gray-500">✖</span> בלי קביעת תורים, ביקורות וסטטיסטיקות
-              </li>
+        <div className="price-plans">
+          <section className="price-plan" aria-labelledby="plan-free">
+            <h2 id="plan-free">מסלול בסיסי</h2>
+            <p className="price-plan-note">לבנות, לערוך ולראות איך האתר ייראה</p>
+            <p className="price-num">
+              0<span className="cur">₪</span><small>לחודש</small>
+            </p>
+            <ul className="price-list">
+              {FREE_ON.map((t) => (
+                <li key={t}>
+                  <Check />
+                  <b>{t}</b>
+                </li>
+              ))}
             </ul>
-
-            <button
-              disabled
-              className="w-full py-4 rounded-xl font-bold bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed"
-            >
+            <ul className="price-list price-list--off" style={{ marginTop: '-0.6rem' }}>
+              {FREE_OFF.map((t) => (
+                <li key={t}>
+                  <Dash />
+                  <b style={{ fontWeight: 500 }}>{t}</b>
+                </li>
+              ))}
+            </ul>
+            <button type="button" disabled className="ui-btn ui-btn--quiet ui-btn--block">
               המסלול הנוכחי שלך
             </button>
-          </div>
+          </section>
 
-          {/* כרטיס Pro */}
-          <div className="bg-gradient-to-b from-blue-900 to-indigo-900 rounded-3xl p-1 border border-blue-700 shadow-2xl shadow-blue-900/30 w-full max-w-md flex flex-col relative transform md:-translate-y-4">
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-400 to-indigo-400 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
-              הכי משתלם
-            </div>
-
-            <div className="bg-white rounded-[23px] p-8 flex flex-col h-full">
-              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-2">מסלול Pro</h3>
-              <p className="text-gray-500 mb-6">לבעלי עסקים שרוצים לקוחות</p>
-              <div className="mb-8">
-                <span className="text-5xl font-black text-gray-900">29₪</span>
-                <span className="text-gray-500 font-medium"> / לחודש</span>
-              </div>
-
-              <ul className="space-y-4 mb-8 flex-grow">
-                {PRO_FEATURES.map((feature) => (
-                  <li key={feature.title} className="flex items-start gap-3">
-                    <span className="text-blue-500 mt-0.5">✓</span>
-                    <span>
-                      <span className="block text-gray-800 font-bold">{feature.title}</span>
-                      <span className="block text-sm text-gray-500 leading-relaxed">{feature.text}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={handleUpgrade}
-                disabled={isLoading}
-                className={`w-full py-4 rounded-xl font-black text-white shadow-lg transition-transform ${
-                  isLoading
-                    ? 'bg-blue-400 cursor-not-allowed opacity-70'
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-500/30 hover:scale-105'
-                }`}
-              >
-                {isLoading ? 'פותח דף סליקה...' : 'שדרג עכשיו ל-Pro'}
-              </button>
-              <p className="text-xs text-gray-500 text-center mt-3">ביטול בכל רגע, בלי התחייבות.</p>
-            </div>
-          </div>
-
+          <section className="price-plan price-plan--pro" aria-labelledby="plan-pro">
+            <span className="price-plan-best">הכי משתלם</span>
+            <h2 id="plan-pro">מסלול Pro</h2>
+            <p className="price-plan-note">לבעלי עסקים שרוצים לקוחות</p>
+            <p className="price-num">
+              29<span className="cur">₪</span><small>לחודש</small>
+            </p>
+            <ul className="price-list">
+              {PRO_FEATURES.map((feature) => (
+                <li key={feature.title}>
+                  <Check />
+                  <div>
+                    <b>{feature.title}</b>
+                    <span>{feature.text}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <button type="button" onClick={handleUpgrade} disabled={isLoading} className="ui-btn ui-btn--lg ui-btn--block">
+              {isLoading ? 'פותח דף סליקה...' : 'שדרג עכשיו ל-Pro'}
+            </button>
+            <p className="price-fine">ביטול בכל רגע, בלי התחייבות.</p>
+          </section>
         </div>
 
-        <section className="max-w-3xl mx-auto mt-24" aria-labelledby="faq-title">
-          <h2 id="faq-title" className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-8">שאלות נפוצות</h2>
-          <div className="space-y-4">
-            {FAQ.map((item) => (
-              <div key={item.q} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                <h3 className="font-bold text-gray-900 mb-1">{item.q}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{item.a}</p>
-              </div>
-            ))}
-          </div>
+        <section className="price-faq" aria-labelledby="faq-title">
+          <h2 id="faq-title">שאלות נפוצות</h2>
+          {FAQ.map((item) => (
+            <details key={item.q}>
+              <summary>{item.q}</summary>
+              <p>{item.a}</p>
+            </details>
+          ))}
         </section>
       </div>
     </div>

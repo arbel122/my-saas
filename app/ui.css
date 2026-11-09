@@ -1,0 +1,553 @@
+/* Hallmark · custom · idea: "the other rooms on the same street: sign-in, plans and checkout set in the homepage's night" · vibe: "night street, loud type, direct, friendly" · ground: near-black navy oklch(0.16 0.04 265), shared with home.css · ink: near-white · accent: blue oklch(0.52 0.22 262) for actions · faces: Secular One display, Heebo body · copy: unchanged except removed emoji and the tracked-caps tag */
+/* waive: near-black ground with one blue accent is a Reflex default; kept because the owner asked for black and blue on the homepage and these pages must match it. */
+
+.ui {
+  --u-sun: oklch(0.16 0.04 265);
+  --u-ink: oklch(0.96 0.01 260);
+  --u-soft: oklch(0.76 0.03 260);
+  --u-paper: oklch(0.2 0.045 265);
+  --u-deep: oklch(0.12 0.03 265);
+  --u-blue: oklch(0.52 0.22 262);
+  --u-blue-hover: oklch(0.58 0.21 262);
+  --u-line: oklch(0.96 0.01 260 / 0.24);
+  --u-good: oklch(0.78 0.14 160);
+  --u-bad: oklch(0.74 0.16 25);
+  --u-on-blue: oklch(0.99 0 0);
+
+  --u-font-display: var(--font-display-he), 'Arial Hebrew', sans-serif;
+  --u-font-body: var(--font-body-he), 'Arial Hebrew', sans-serif;
+
+  --u-max: 1240px;
+  --u-gutter: clamp(1.1rem, 4vw, 3rem);
+  --u-radius: 10px;
+
+  background: var(--u-sun);
+  color: var(--u-ink);
+  font-family: var(--u-font-body);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  min-height: 100vh;
+  color-scheme: dark;
+}
+
+html:has(.ui),
+body:has(.ui) {
+  overflow-x: clip;
+}
+
+.ui *,
+.ui *::before,
+.ui *::after {
+  box-sizing: border-box;
+}
+
+.ui :where(h1, h2, h3) {
+  font-family: var(--u-font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--u-ink);
+  margin: 0;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.ui :where(p, ul, ol, dl, dd) {
+  margin: 0;
+}
+.ui :where(a) {
+  color: inherit;
+}
+.ui a:focus-visible,
+.ui button:focus-visible,
+.ui input:focus-visible,
+.ui summary:focus-visible {
+  outline: 3px solid var(--u-ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- buttons and links ---------- */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-family: var(--u-font-body);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  text-decoration: none;
+  padding: 0.9rem 1.5rem;
+  border-radius: var(--u-radius);
+  border: 2px solid var(--u-blue);
+  background: var(--u-blue);
+  color: var(--u-on-blue);
+  cursor: pointer;
+}
+.ui-btn:hover {
+  background: var(--u-blue-hover);
+  border-color: var(--u-blue-hover);
+}
+.ui-btn:active {
+  transform: translateY(1px);
+}
+.ui-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.ui-btn--lg {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+}
+.ui-btn--block {
+  width: 100%;
+}
+.ui-btn--quiet {
+  background: transparent;
+  border-color: var(--u-line);
+  color: var(--u-ink);
+}
+.ui-btn--quiet:hover {
+  background: transparent;
+  border-color: var(--u-ink);
+}
+.ui-link {
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--u-ink);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid var(--u-ink);
+  padding: 0.3rem 0;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.ui-link:hover {
+  border-bottom-color: transparent;
+}
+.ui-link:disabled {
+  color: var(--u-soft);
+  border-bottom-color: transparent;
+  cursor: not-allowed;
+}
+
+/* ---------- forms ---------- */
+.ui-field {
+  margin-bottom: 1.25rem;
+}
+.ui-label {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.ui-input {
+  display: block;
+  width: 100%;
+  font-family: var(--u-font-body);
+  font-size: 1.05rem;
+  color: var(--u-ink);
+  background: var(--u-paper);
+  border: 2px solid var(--u-line);
+  border-radius: var(--u-radius);
+  padding: 0.95rem 1rem;
+}
+.ui-input::placeholder {
+  color: oklch(0.96 0.01 260 / 0.45);
+}
+.ui-input:hover {
+  border-color: oklch(0.96 0.01 260 / 0.45);
+}
+.ui-input:focus {
+  border-color: var(--u-blue-hover);
+}
+.ui-input:-webkit-autofill {
+  -webkit-text-fill-color: var(--u-ink);
+  box-shadow: 0 0 0 100px var(--u-paper) inset;
+}
+.ui-hint {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--u-soft);
+}
+.ui-pw {
+  position: relative;
+}
+/* השדה עצמו LTR, והכפתור בקצה השמאלי של שורת ה-RTL: משאירים לו מקום משמאל */
+.ui-pw .ui-input {
+  padding-inline-start: 3.4rem;
+}
+.ui-eye {
+  position: absolute;
+  inset-inline-end: 0.4rem;
+  top: 50%;
+  translate: 0 -50%;
+  width: 2.6rem;
+  height: 2.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--u-soft);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ui-eye:hover {
+  color: var(--u-ink);
+}
+.ui-alert {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--u-radius);
+  background: var(--u-paper);
+  border-inline-start: 4px solid var(--u-soft);
+  font-weight: 600;
+  font-size: 1rem;
+}
+.ui-alert--error {
+  border-inline-start-color: var(--u-bad);
+}
+.ui-alert--good {
+  border-inline-start-color: var(--u-good);
+}
+.ui-spin {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 3px solid oklch(0.99 0 0 / 0.3);
+  border-top-color: var(--u-on-blue);
+  border-radius: 50%;
+  animation: ui-spin 0.8s linear infinite;
+}
+.ui-spin--blue {
+  border-color: var(--u-line);
+  border-top-color: var(--u-blue-hover);
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- sign-in rooms ---------- */
+.auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1.4rem var(--u-gutter) 2.5rem;
+}
+.auth-logo {
+  align-self: flex-start;
+  padding-block: 0.4rem;
+  text-decoration: none;
+}
+.auth-box {
+  width: 100%;
+  max-width: 27rem;
+  margin: auto;
+  padding-block: 2rem;
+}
+.auth-box h1 {
+  font-size: clamp(2.3rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.auth-sub {
+  margin-top: 0.8rem;
+  margin-bottom: 2rem;
+  color: var(--u-soft);
+  font-size: 1.1rem;
+}
+.auth-submit {
+  margin-top: 0.5rem;
+}
+.auth-switch {
+  margin-top: 2rem;
+  color: var(--u-soft);
+  font-size: 1rem;
+}
+.auth-switch .ui-link {
+  margin-inline-start: 0.4rem;
+}
+.auth-aux {
+  margin-top: 0.4rem;
+}
+.auth-icon {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1.2rem;
+  color: var(--u-blue-hover);
+}
+.auth-wait {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.auth-panel {
+  display: none;
+}
+@media (min-width: 900px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  }
+  .auth-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2rem;
+    background: var(--u-paper);
+    padding: 3rem var(--u-gutter);
+    min-height: 100vh;
+  }
+  .auth-panel-img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: min(58vh, 560px);
+    margin-inline: auto;
+    border: 3px solid var(--u-blue);
+    border-radius: var(--u-radius);
+    background: var(--u-deep);
+  }
+  .auth-panel h2 {
+    font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+    line-height: 1.1;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .auth-panel p {
+    text-align: center;
+    color: var(--u-soft);
+    font-size: 1.05rem;
+  }
+}
+
+/* ---------- plans ---------- */
+.price-wrap {
+  width: 100%;
+  max-width: var(--u-max);
+  margin-inline: auto;
+  padding-inline: var(--u-gutter);
+}
+.price {
+  padding-bottom: 6rem;
+}
+.price-top {
+  padding-block: 1.4rem;
+}
+.price-head {
+  padding-block: clamp(2rem, 6vw, 4.5rem) clamp(2rem, 4vw, 3rem);
+}
+.price-head h1 {
+  font-size: clamp(2.5rem, 7vw, 5.2rem);
+  line-height: 1.02;
+  max-width: 14ch;
+  text-wrap: balance;
+}
+.price-head h1 em {
+  font-style: normal;
+  color: var(--u-blue-hover);
+}
+.price-head p {
+  margin-top: 1.3rem;
+  max-width: 34rem;
+  color: var(--u-soft);
+  font-size: clamp(1.1rem, 1.7vw, 1.3rem);
+}
+.price-head .price-roi {
+  margin-top: 0.8rem;
+  font-size: 1rem;
+}
+.price-plans {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.price-plan {
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+  border: 2px solid var(--u-line);
+  border-radius: var(--u-radius);
+}
+.price-plan--pro {
+  background: var(--u-paper);
+  border: 3px solid var(--u-blue);
+}
+.price-plan h2 {
+  font-size: 1.9rem;
+  line-height: 1.1;
+}
+.price-plan-note {
+  margin-top: 0.4rem;
+  color: var(--u-soft);
+  font-size: 1.05rem;
+}
+.price-plan-best {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--u-blue-hover);
+}
+.price-num {
+  margin-top: 1.2rem;
+  font-family: var(--u-font-display);
+  font-size: clamp(4rem, 10vw, 6.5rem);
+  line-height: 0.95;
+}
+.price-num .cur {
+  font-family: var(--u-font-body);
+  font-weight: 800;
+  font-size: 0.55em;
+  margin-inline-start: 0.12em;
+}
+.price-num small {
+  font-family: var(--u-font-body);
+  font-weight: 500;
+  font-size: 1.1rem;
+  color: var(--u-soft);
+  margin-inline-start: 0.6rem;
+}
+.price-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.6rem 0 1.8rem;
+}
+.price-list li {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+  gap: 0 0.9rem;
+  padding-block: 0.95rem;
+  border-top: 2px solid var(--u-line);
+}
+.price-list svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.15rem;
+  color: var(--u-blue-hover);
+}
+.price-list b {
+  display: block;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.price-list span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  color: var(--u-soft);
+  line-height: 1.5;
+}
+.price-list--off li {
+  color: var(--u-soft);
+}
+.price-list--off svg {
+  color: var(--u-soft);
+}
+.price-fine {
+  margin-top: 0.9rem;
+  text-align: center;
+  color: var(--u-soft);
+  font-size: 1rem;
+}
+.price-faq {
+  margin-top: clamp(3.5rem, 8vw, 6rem);
+  max-width: 46rem;
+}
+.price-faq h2 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.05;
+  margin-bottom: 1.5rem;
+}
+.price-faq details {
+  border-top: 2px solid var(--u-line);
+  padding-block: 1.1rem;
+}
+.price-faq details:last-child {
+  border-bottom: 2px solid var(--u-line);
+}
+.price-faq summary {
+  cursor: pointer;
+  font-family: var(--u-font-display);
+  font-size: 1.35rem;
+  line-height: 1.25;
+  list-style-position: inside;
+}
+.price-faq details p {
+  margin-top: 0.7rem;
+  color: var(--u-soft);
+  font-size: 1.05rem;
+  max-width: 38rem;
+}
+@media (min-width: 900px) {
+  .price-plans {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 1.75rem;
+  }
+}
+
+/* ---------- checkout ---------- */
+.pay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem var(--u-gutter);
+}
+.pay-card {
+  width: 100%;
+  max-width: 30rem;
+  background: var(--u-paper);
+  border: 3px solid var(--u-blue);
+  border-radius: var(--u-radius);
+  padding: clamp(1.4rem, 4vw, 2.2rem);
+}
+.pay-card h1 {
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  line-height: 1.05;
+}
+.pay-card .pay-lead {
+  margin-top: 0.8rem;
+  color: var(--u-soft);
+  font-size: 1.05rem;
+}
+.pay-total {
+  margin-block: 1.6rem;
+  padding-block: 1.2rem;
+  border-block: 2px solid var(--u-line);
+}
+.pay-total span {
+  display: block;
+  color: var(--u-soft);
+  font-size: 1rem;
+}
+.pay-total strong {
+  display: block;
+  font-family: var(--u-font-display);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 10vw, 4.6rem);
+  line-height: 1;
+  margin-block: 0.2rem;
+}
+.pay-back {
+  margin-top: 1.4rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-spin {
+    animation-duration: 3s;
+  }
+  .ui-btn:active {
+    transform: none;
+  }
+}
