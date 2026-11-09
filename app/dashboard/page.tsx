@@ -5,6 +5,7 @@ import { supabase } from '../utils/supabase';
 import { supportWhatsappUrl } from '../utils/config';
 import Link from 'next/link';
 import InstallAppButton from '../components/InstallAppButton';
+import Logo from '../components/Logo';
 import ReminderButton from '../components/ReminderButton';
 import AppointmentsCalendar from '../components/AppointmentsCalendar';
 import SiteStats from '../components/SiteStats';
@@ -40,6 +41,7 @@ export default function DashboardPage() {
     hidden: boolean;
   };
   const [reviews, setReviews] = useState<ManagedReview[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -224,6 +226,27 @@ export default function DashboardPage() {
     router.push('/create');
   };
 
+  // כתובת האתר הציבורי של עסק (כתובת קריאה אם יש, אחרת לפי המזהה)
+  const siteLink = (site: any) =>
+    `${window.location.origin}${site.content?.slug ? `/b/${encodeURIComponent(site.content.slug)}` : `/site/${site.id}`}`;
+
+  const copySiteLink = async (site: any) => {
+    const url = siteLink(site);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      window.prompt('העתקו את הקישור:', url);
+    }
+    setCopiedId(site.id);
+    setTimeout(() => setCopiedId((id) => (id === site.id ? null : id)), 2000);
+  };
+
+  // פותח את וואטסאפ עם הודעה מוכנה, והמשתמש בוחר למי לשלוח
+  const shareSiteLink = (site: any) => {
+    const name = site.content?.businessName || site.name || '';
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${name}: ${siteLink(site)}`)}`, '_blank', 'noopener,noreferrer');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fafafa] font-sans">
@@ -277,7 +300,10 @@ export default function DashboardPage() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+            <Link href="/" aria-label="Opnyx, דף הבית" className="flex-shrink-0 ml-1 py-2">
+              <Logo size={28} tone="light" />
+            </Link>
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
               {userEmail.charAt(0).toUpperCase()}
             </div>
             <div className="hidden md:block">
@@ -298,8 +324,9 @@ export default function DashboardPage() {
               onClick={() => setShowSettings(!showSettings)}
               className="bg-white px-4 py-2.5 rounded-full shadow-sm border border-gray-200 hover:bg-gray-50 hover:scale-105 transition-all z-50 flex items-center gap-2 text-sm font-bold text-gray-700"
               title="הגדרות חשבון"
+              aria-label="הגדרות חשבון"
             >
-              <span>הגדרות חשבון</span>
+              <span className="hidden sm:inline">הגדרות חשבון</span>
               <span>⚙️</span>
             </button>
             
@@ -312,6 +339,17 @@ export default function DashboardPage() {
                   <span>סגור חלון</span>
                   <span>✖</span>
                 </button>
+                <Link href="/" className="px-4 py-3 text-right hover:bg-gray-50 text-gray-700 border-b transition font-medium flex justify-between items-center">
+                  <span>דף הבית</span>
+                </Link>
+                <Link href="/my-appointments" className="px-4 py-3 text-right hover:bg-gray-50 text-gray-700 border-b transition font-medium flex justify-between items-center">
+                  <span>התורים שלי כלקוח</span>
+                </Link>
+                {!isPro && (
+                  <Link href="/pricing" className="px-4 py-3 text-right hover:bg-gray-50 text-gray-700 border-b transition font-medium flex justify-between items-center">
+                    <span>מחיר ושדרוג ל-Pro</span>
+                  </Link>
+                )}
                 <button
                   className="px-4 py-3 text-right hover:bg-blue-50 text-blue-700 border-b transition font-medium flex justify-between items-center"
                   onClick={() => { setShowSettings(false); setShowSubscription(true); }}
@@ -354,6 +392,32 @@ export default function DashboardPage() {
             הדשבורד שלי
           </h1>
           <p className="text-gray-500 text-lg">כאן תוכל לנהל את האתרים שלך ולעקוב אחר התורים של הלקוחות.</p>
+
+          {/* פעולות מהירות */}
+          <div className="flex flex-wrap gap-3 mt-6">
+            <button onClick={handleCreateNewSite} className="bg-gray-900 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-black transition-colors">
+              יצירת אתר חדש
+            </button>
+            {isPro ? (
+              <button onClick={() => setShowSubscription(true)} className="bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">
+                ניהול מנוי
+              </button>
+            ) : (
+              sites.length > 0 && (
+                <Link href="/pricing" className="bg-blue-600 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">
+                  פרסום האתר ושדרוג ל-Pro
+                </Link>
+              )
+            )}
+            <a
+              href={supportWhatsappUrl(isPro ? 'היי, אני מנוי Pro ואשמח לעזרה עם האתר שלי.' : 'היי, אשמח לעזרה עם האתר שלי ב-Opnyx.')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white border border-gray-200 text-gray-700 px-5 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors"
+            >
+              שאלה? כתבו לנו בוואטסאפ
+            </a>
+          </div>
         </header>
 
         {staffSiteId && (() => {
@@ -419,7 +483,21 @@ export default function DashboardPage() {
             />
           ) : appointments.length === 0 ? (
             <div className="bg-white rounded-3xl border border-gray-100 p-8 text-center text-gray-400 shadow-sm">
-              אין תורים להצגה כרגע (או שכל התורים עברו). ברגע שמישהו יקבע תור עתידי, הוא יופיע כאן מיד!
+              <p>אין תורים להצגה כרגע (או שכל התורים עברו). ברגע שמישהו יקבע תור עתידי, הוא יופיע כאן מיד!</p>
+              {(() => {
+                const published = sites.find((s: any) => s.is_pro);
+                if (!published) return null;
+                return (
+                  <div className="mt-5 flex flex-wrap justify-center gap-3">
+                    <button onClick={() => copySiteLink(published)} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">
+                      {copiedId === published.id ? 'הקישור הועתק' : 'העתק קישור לשליחה ללקוחות'}
+                    </button>
+                    <button onClick={() => shareSiteLink(published)} className="bg-green-50 text-green-700 border border-green-100 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-100 transition-colors">
+                      שיתוף בוואטסאפ
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -510,8 +588,13 @@ export default function DashboardPage() {
         )}
 
         {/* --- אזור ניהול האתרים --- */}
-        <header className="mb-8">
+        <header className="mb-8 flex items-center justify-between gap-4">
           <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">הפרויקטים שלי</h2>
+          {sites.length > 0 && (
+            <button onClick={handleCreateNewSite} className="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-black transition-colors whitespace-nowrap">
+              יצירת אתר חדש
+            </button>
+          )}
         </header>
 
         {sites.length === 0 ? (
@@ -601,8 +684,29 @@ export default function DashboardPage() {
                     )}
                   </div>
                   
+                  {/* הפעולות הראשיות: עריכה, ופרסום או שיתוף */}
+                  <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <button onClick={() => handleEdit(site)} className="bg-gray-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition-colors">
+                      עריכת האתר
+                    </button>
+                    {site.is_pro ? (
+                      <button onClick={() => copySiteLink(site)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">
+                        {copiedId === site.id ? 'הקישור הועתק' : 'העתק קישור'}
+                      </button>
+                    ) : (
+                      <Link href="/checkout" className="bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors text-center">
+                        פרסום האתר
+                      </Link>
+                    )}
+                  </div>
+                  {site.is_pro && (
+                    <button onClick={() => shareSiteLink(site)} className="mt-3 w-full bg-green-50 text-green-700 border border-green-100 py-3 rounded-xl font-bold text-sm hover:bg-green-100 transition-colors">
+                      שיתוף בוואטסאפ
+                    </button>
+                  )}
+
                   {/* הכפתורים הנקיים למטה */}
-                  <div className="flex gap-3 mt-auto pt-2">
+                  <div className="flex gap-3 pt-3">
                     <Link 
                       href={site.content?.slug ? `/b/${encodeURIComponent(site.content.slug)}` : `/site/${site.id}`} 
                       target="_blank"

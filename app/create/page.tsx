@@ -701,12 +701,19 @@ export default function CreatePage() {
 {/* === הדר עליון === */}
         <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/50 py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-[100] transition-all">
           <input
-            className="text-2xl font-extrabold text-gray-900 bg-transparent outline-none w-auto max-w-[200px] md:max-w-md transition-colors hover:bg-gray-100/50 focus:bg-gray-100 cursor-text rounded-lg px-2 py-1 tracking-tight"
+            className="text-2xl font-extrabold text-gray-900 bg-transparent outline-none w-auto max-w-[110px] sm:max-w-[200px] md:max-w-md transition-colors hover:bg-gray-100/50 focus:bg-gray-100 cursor-text rounded-lg px-2 py-1 tracking-tight"
             value={siteData.businessName || 'שם העסק'}
             onChange={(e) => updateField('businessName', e.target.value)}
           />
 
-          <div className="flex items-center gap-3 md:gap-5 relative">
+          <div className="flex items-center gap-2 md:gap-5 relative">
+            <button
+              type="button"
+              onClick={() => { if (confirm('לחזור לדשבורד? שינויים שלא נשמרו יאבדו.')) router.push('/dashboard'); }}
+              className="bg-gray-50 text-gray-700 border border-gray-200 px-3 sm:px-5 py-2.5 rounded-full font-bold text-xs sm:text-sm shadow-sm hover:bg-gray-100 transition-all whitespace-nowrap"
+            >
+              לדשבורד
+            </button>
             <button onClick={() => setShowSettings(!showSettings)} className="bg-gray-50 p-2.5 rounded-full border border-gray-200 hover:bg-gray-100 hover:scale-105 transition-all text-xl shadow-sm">⚙️</button>
             {showSettings && (
               <div className="absolute top-14 left-0 bg-white border border-gray-100 shadow-2xl rounded-2xl w-64 overflow-hidden flex flex-col z-[100] animate-in slide-in-from-top-2">
