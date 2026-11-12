@@ -4,16 +4,43 @@ const PAYPAL_BASE =
     ? 'https://api-m.paypal.com'
     : 'https://api-m.sandbox.paypal.com';
 
+type BillingCycle = {
+  tenure_type?: string;
+  pricing_scheme?: { fixed_price?: { value?: string; currency_code?: string } };
+};
+
 export type PayPalSubscription = {
   id: string;
   status: string;
   plan_id: string;
   custom_id?: string;
+  plan_overridden?: boolean;
+  plan?: { billing_cycles?: BillingCycle[] };
   billing_info?: {
     next_billing_time?: string;
     last_payment?: { time?: string };
   };
 };
+
+const EXPECTED_PRICE = '29.00';
+const EXPECTED_CURRENCY = 'ILS';
+
+// בודק שהמנוי שייך לתוכנית שלנו ושהמחיר לא שונה בצד הלקוח.
+// PayPal מאפשר לדפדפן "לדרוס" את התוכנית ביצירת המנוי (מחיר, תקופת ניסיון וכו'),
+// ולכן בלי הבדיקה הזו אפשר היה לקבל Pro ב-1 ₪.
+export function isGenuineSubscription(sub: PayPalSubscription): boolean {
+  if (sub.plan_id !== process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID) return false;
+  // כל דריסה של התוכנית (מחיר, תקופת ניסיון חינם, מספר חיובים) נדחית
+  if (sub.plan_overridden === true) return false;
+
+  // הגנה נוספת: המחיר החודשי בפועל חייב להיות המחיר שלנו
+  const regular = sub.plan?.billing_cycles?.filter((c) => c.tenure_type === 'REGULAR') ?? [];
+  for (const c of regular) {
+    const p = c.pricing_scheme?.fixed_price;
+    if (p?.currency_code !== EXPECTED_CURRENCY || Number(p.value) < Number(EXPECTED_PRICE)) return false;
+  }
+  return true;
+}
 
 async function getAccessToken(): Promise<string> {
   const credentials = Buffer.from(
@@ -37,7 +64,7 @@ async function getAccessToken(): Promise<string> {
 export async function getSubscription(subscriptionId: string): Promise<PayPalSubscription> {
   const token = await getAccessToken();
   const res = await fetch(
-    `${PAYPAL_BASE}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    `${PAYPAL_BASE}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}?fields=plan`,
     { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
   );
 
