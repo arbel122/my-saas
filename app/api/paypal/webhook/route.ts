@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSubscription, verifyWebhookSignature } from '@/app/utils/paypal';
+import { getSubscription, isGenuineSubscription, verifyWebhookSignature } from '@/app/utils/paypal';
 import { isStillPaid, periodEnd, setProStatus } from '@/app/utils/pro';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     // מושכים את המצב העדכני מ-PayPal במקום לסמוך על תוכן האירוע
     const subscription = await getSubscription(event.resource.id);
 
-    if (subscription.plan_id !== process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID || !subscription.custom_id) {
+    if (!isGenuineSubscription(subscription) || !subscription.custom_id) {
       return NextResponse.json({ received: true });
     }
     const userId = subscription.custom_id;

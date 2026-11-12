@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/app/utils/supabase-admin';
-import { getSubscription } from '@/app/utils/paypal';
+import { getSubscription, isGenuineSubscription } from '@/app/utils/paypal';
 import { setProStatus } from '@/app/utils/pro';
 
 export async function POST(req: Request) {
@@ -23,10 +23,7 @@ export async function POST(req: Request) {
     // אימות מול PayPal עצמו, לא סומכים על מה שהדפדפן אומר
     const subscription = await getSubscription(subscriptionId);
 
-    if (
-      subscription.plan_id !== process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID ||
-      subscription.custom_id !== user.id
-    ) {
+    if (!isGenuineSubscription(subscription) || subscription.custom_id !== user.id) {
       return NextResponse.json({ error: 'המנוי לא תואם למשתמש' }, { status: 403 });
     }
 
